@@ -141,7 +141,7 @@ function calc(){
  /* WhatsApp */
  var dimTxt=res.U.filter(function(u){return!u.nodim}).map(function(u){return u.nod?"• "+u.label:"• "+u.label+": "+u.n+" × Ø "+f2(u.d)+" m × "+f2(u.h)+" m"}).join("\n");
  var ld=(window.SANEAR_LEAD&&window.SANEAR_LEAD())||window.__lead||null;var m="Olá, usei o simulador de dimensionamento no site da SANEAR AMBIENTAL."+(ld?"\n• Nome: "+ld.nome+"\n• WhatsApp: "+ld.tel:"")+"\n• Sistema: "+(L==="esgoto"?"ETE (esgoto)":"ETA (água)")+"\n"+(MODE==="pes"?"• Empreendimento: "+t[0]+"\n• "+t[2]+": "+P+"\n• Consumo: "+q+" L/pessoa·dia\n":"")+"• "+lines[0]+"\n• Solução: "+res.sol+($("s_cid").value?"\n• Local: "+$("s_cid").value:"")+(ar?"\n• "+lines[lines.length-1]:"")+"\nTanques (estimativa de tamanhos):\n"+dimTxt+"\nGostaria de um orçamento.";
- $("r_wa").href="https://wa.me/5591989138154?text="+encodeURIComponent(m);
+ $("r_wa").href="https://wa.me/5591989138154?text="+encodeURIComponent(m);last.msg=m;last.sist=(L==="esgoto"?"ETE (esgoto)":"ETA (água)");try{dispatchEvent(new CustomEvent("sanear:sim"))}catch(_){}
  last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
 }
 function empty(){last=null;$("r_med").textContent="–";$("r_pk").textContent="–";$("r_med2").textContent="";$("r_pk2").textContent="";$("r_sol").textContent="–";$("r_txt").textContent="Informe a vazão ou o número de pessoas.";$("r_nb").textContent="";$("r_tab").innerHTML="";$("r_ver").innerHTML="";$("r_ok").className="okbox";$("r_ok").textContent="";}
