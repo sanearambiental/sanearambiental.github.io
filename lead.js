@@ -5,7 +5,7 @@ function lead(){try{return JSON.parse(localStorage.getItem("sanear_lead")||"null
 function send(motivo){
  if(location.hash==="#interno")return;/* uso interno da equipe não é registrado */
  var ld=lead(),d=window.SANEAR_DIM&&SANEAR_DIM.last();if(!ld||!d||!d.msg)return;
- var key=motivo+"|"+d.msg;if(sent[key]||n>=8)return;sent[key]=1;n++;
+ var clique=/WhatsApp|desenho/.test(motivo),key=(clique?motivo+"|":"")+d.msg;if(sent[key]||n>=8)return;sent[key]=1;if(!clique)sent[d.msg]=1;n++;
  var tel=String(ld.tel||"").replace(/\D/g,"").replace(/^0+/,"");if(tel.indexOf("55")!==0)tel="55"+tel;
  var cid=(document.getElementById("s_cid")||{}).value||"";
  try{fetch(URL,{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({k:"sanear-site",nome:ld.nome,whatsapp:ld.tel,wa:"https://wa.me/"+tel,cidade:cid,sistema:d.sist||"",solucao:d.sol||"",acao:motivo,resumo:d.msg})}).catch(function(){});}catch(e){}}
