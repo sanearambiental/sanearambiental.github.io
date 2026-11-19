@@ -86,10 +86,15 @@ function eta(Qp,ctx){
  /* Poço: correção de pH dosada por bomba dosadora direto na tubulação que vai para a torre (sem tanque).
     Rio: tanque de coagulação e correção de pH. */
  R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
- if(rio){var cp=pickH(Qh/6,1.2);big=big||cp.big;var tph=cp.V/Qh*60;
-  R.push(["Coagulação e correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
-  U.push({label:"Coagulação e correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:"Dosagem de coagulante e ajuste de pH com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
-  etapas.push("coagulação e correção de pH");}
+ if(rio){/* caixa de areia com medidor Parshall: a calha Parshall é a mistura rápida, onde se dosa o coagulante e se corrige o pH (sem tanque de coagulação) */
+  var Qls=Qh/3.6,PS=[[1,5.4,.9],[2,13.2,1.0],[3,53.8,1.2],[6,110.4,1.6],[9,251.9,1.8],[12,455.6,2.4]],ps=PS[PS.length-1];for(var k=0;k<PS.length;k++){if(Qls<=PS[k][1]){ps=PS[k];break;}}
+  var vh=.30,bca=Math.max(.4,Math.ceil(Qh/3600/vh/.6*20)/20),hca=Math.max(.25,Math.ceil(Qh/3600/vh/bca*20)/20),vr=Qh/3600/(bca*hca),Lca=Math.max(1.5,Math.ceil(hca*vr/.02*1.5*2)/2),Lt=Math.round((Lca+ps[2]+.4)*10)/10,hc=Math.round((hca+.35)*100)/100;
+  R.push(["Caixa de areia","Velocidade horizontal",f2(vr)+" m/s","≤ 0,30 m/s","Critério de projeto adotado (desarenador)",vr<=.30+1e-6]);
+  R.push(["Caixa de areia","Comprimento",f2(Lca)+" m","remoção de areia ≥ 0,2 mm","Critério de projeto adotado",true]);
+  R.push(["Calha Parshall","Garganta",ps[0]+"\"","vazão até "+fmt(ps[1],1)+" L/s","ABNT NBR ISO 9826 (medição em calha Parshall)",Qls<=ps[1]]);
+  R.push(["Calha Parshall","Mistura rápida (coagulação e correção de pH)","no ressalto da calha","dosagem de coagulante e de alcalinizante","NBR 12216",true]);
+  U.push({label:"Caixa de areia e calha Parshall",kind:"parshall",n:1,d:Lt,wz:bca+.4,h:hc,lca:Lca,bca:bca,pw:ps[0],nod:true,info:"Caixa de areia ("+f2(Lca)+" × "+f2(bca)+" m) seguida de calha Parshall de "+ps[0]+"\" que mede a vazão ("+fmt(Qls,1)+" L/s). No ressalto da calha são dosados o coagulante e o produto de correção de pH: a calha faz a mistura rápida, sem tanque de coagulação. pH da água bruta: "+f2(ph)+"."});
+  etapas.push("caixa de areia e calha Parshall (coagulação e correção de pH)");}
  else{R.push(["Correção de pH","Dosagem","na tubulação de entrada da torre","bomba dosadora","Critério de projeto SANEAR",true]);
   etapas.push("correção de pH na tubulação (bomba dosadora)");}
  /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
@@ -129,6 +134,20 @@ function eta(Qp,ctx){
  var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
  var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantador de alta taxa antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
  var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". A desinfecção (cloração) é feita no reservatório de água tratada. "+por;
+ /* tudo por gravidade: só a caixa de areia com calha Parshall fica numa base alta; os tanques ficam no chão e mudam de altura para a água descer de uma unidade para a outra */
+ var fi=-1;U.forEach(function(u,i){if(/Filtro/.test(u.label))fi=i;});
+ if(rio&&fi>0){var need=U[fi].h+.5;/* nível mínimo de saída da unidade anterior aos filtros (filtros ascendentes) */
+  function setRow(k,val,ok){R.forEach(function(r){if(r[0]===k){r[2]=val;r[5]=ok;}});}
+  for(var i=fi-1;i>=0;i--){var u=U[i],hreq=Math.ceil((need+.25)*20)/20;
+   if(u.kind==="parshall"){u.b=Math.ceil((need+.1)*20)/20;/* fundo do canal acima do nível de entrada do floculador */u.info+=" Fica numa plataforma de concreto a "+f2(u.b)+" m de altura, acima dos tanques: dali a água segue por gravidade.";}
+   else if(u.h<hreq){var hu=Math.min(HMAX,hreq-.5);
+    if(/Flocul/.test(u.label)){/* com a altura fixada pela gravidade, escolhe o diâmetro que mantém 20 a 40 min */var f=null;for(var nn=1;nn<=4&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}f=f||pickH(Qh*.5,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
+    else if(/Pré-oxid/.test(u.label)){var f=pickH(Qh/3,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
+    else{u.hu=hu;u.v=A(u.d)*hu;}
+    u.h=Math.round((u.hu+.5)*100)/100;if(u.h<hreq)u.b=Math.ceil((hreq-u.h)*20)/20;
+    u.info+=" Altura de "+f2(u.h)+" m para a água seguir por gravidade.";}
+   need=(u.b||0)+u.h+.1;}
+  R.push(["Hidráulica","Escoamento entre as unidades","por gravidade","sem bombeamento intermediário","Critério de projeto SANEAR",true]);}
  return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
 
 /* ---------- interface ---------- */

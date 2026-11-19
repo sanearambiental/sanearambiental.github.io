@@ -5,21 +5,21 @@ function V(x,y,z){return[x,y,z]}
 function M(){this.f=[];this.o=0;this.circ=[];this.tk=[];this.tr={P:[],N:[],C:[],M:[]};}
 /* peças reais extraídas do projeto Revit da SANEAR (escada com guarda-corpo, acesso superior, filtro de biogás, casa de máquinas, tampa do preliminar) */
 var PECAS=null;
-M.prototype.tpl=function(k,x,y0,z,ang,sx,sy,sz,col,id){var T=PECAS&&PECAS[k];if(!T)return false;var ca=Math.cos(ang),sa=Math.sin(ang),tr=this.tr,p=T.p,n=T.n,c=T.c;
+M.prototype.tpl=function(k,x,y0,z,ang,sx,sy,sz,col,id){var T=PECAS&&PECAS[k];if(!T)return false;y0+=this.oy||0;var ca=Math.cos(ang),sa=Math.sin(ang),tr=this.tr,p=T.p,n=T.n,c=T.c;
  for(var t=0;t<c.length;t++){var cc=c[t],rgb=cc[4]?[col[0]/255,col[1]/255,col[2]/255]:[cc[0],cc[1],cc[2]];
   for(var j=0;j<3;j++){var i=(t*3+j)*3,lx=p[i]*sx,ly=p[i+1]*sy,lz=p[i+2]*sz,nx=n[i]/sx,ny=n[i+1]/sy,nz=n[i+2]/sz,nl=Math.hypot(nx,ny,nz)||1;
    tr.P.push(x+lx*ca-lz*sa,y0+ly,z+lx*sa+lz*ca);tr.N.push((nx*ca-nz*sa)/nl,ny/nl,(nx*sa+nz*ca)/nl);tr.C.push(rgb[0],rgb[1],rgb[2]);tr.M.push(cc[3],id);}}return true;};
 /* tanque como no projeto: corpo liso em PRFV, tampa de acesso 0,60 m e escada com guarda-corpo do Revit */
-M.prototype.stank=function(x,z,r,h,c,id,ladAng){this.cyl(x,0,z,r,h,c,id,Math.max(36,Math.round(r*40)));this.circ.push([x,z,r]);if(r>=.45)this.tk.push([x,z,r,h]);
+M.prototype.stank=function(x,z,r,h,c,id,ladAng){var o=this.oy||0;this.cyl(x,0,z,r,h,c,id,Math.max(36,Math.round(r*40)));if(!o)this.circ.push([x,z,r]);if(r>=.45&&!this.nologo){if(!o)this.tk.push([x,z,r,h]);else{var cc=o+h*(h<3.5?.47:.56),ww=cc/.56>=3.5?cc/.56:Math.min(cc/.47,3.49);this.tk.push([x,z,r,ww]);}}
  var a=ladAng===undefined?-.55:ladAng;
  if(!this.tpl("lid",x+Math.cos(a)*r*.5,h,z+Math.sin(a)*r*.5,a-Math.PI,1,1,1,c,id))this.cyl(x+Math.cos(a)*r*.5,h,z+Math.sin(a)*r*.5,.34,.12,C.lid,id,24);
- if(ladAng!==undefined){var lt=PECAS&&PECAS.ladder;if(lt){var dx=r-lt.r0;this.tpl("ladder",x+Math.cos(a)*dx,0,z+Math.sin(a)*dx,a-Math.PI,1,(h+1.08)/(lt.h0+1.08),1,c,id);}else this.cage(x+(r+.12)*Math.cos(a),z+(r+.12)*Math.sin(a),h,a,C.ladder,id);}};
+ if(ladAng!==undefined){this.oy=0;var lt=PECAS&&PECAS.ladder;if(lt){var dx=r-lt.r0;this.tpl("ladder",x+Math.cos(a)*dx,0,z+Math.sin(a)*dx,a-Math.PI,1,(o+h+1.08)/(lt.h0+1.08),1,c,id);}else this.cage(x+(r+.12)*Math.cos(a),z+(r+.12)*Math.sin(a),o+h,a,C.ladder,id);this.oy=o;}};
 M.prototype.face=function(p,c,id,two,ns){this.f.push({p:p,c:c,id:id,two:!!two,o:this.o,ns:ns});};
-M.prototype.box=function(x,y,z,w,h,d,c,id){this.o++;if(y<=.05&&y>-.01&&id>-2&&Math.min(w,d)>.5&&h>.3)this.circ.push([x,z,Math.min(w,d)*.5]);var a=x-w/2,b=x+w/2,e=z-d/2,g=z+d/2,t=y+h;
+M.prototype.box=function(x,y,z,w,h,d,c,id){this.o++;y+=this.oy||0;if(y<=.05&&y>-.01&&id>-2&&Math.min(w,d)>.5&&h>.3)this.circ.push([x,z,Math.min(w,d)*.5]);var a=x-w/2,b=x+w/2,e=z-d/2,g=z+d/2,t=y+h;
  var P=[V(a,y,e),V(b,y,e),V(b,y,g),V(a,y,g),V(a,t,e),V(b,t,e),V(b,t,g),V(a,t,g)];
  var F=[[0,1,2,3],[7,6,5,4],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
  for(var i=0;i<6;i++)this.face(F[i].map(function(k){return P[k]}),c,id);};
-M.prototype.cyl=function(x,y,z,r,h,c,id,n,top){this.o++;if(y<=.3&&r>.2)this.circ.push([x,z,r]);n=n||(r>.5?44:24);var lo=[],hi=[];
+M.prototype.cyl=function(x,y,z,r,h,c,id,n,top){this.o++;y+=this.oy||0;if(y<=.3&&r>.2)this.circ.push([x,z,r]);n=n||(r>.5?44:24);var lo=[],hi=[];
  for(var i=0;i<n;i++){var a=i/n*Math.PI*2;lo.push(V(x+r*Math.cos(a),y,z+r*Math.sin(a)));hi.push(V(x+r*Math.cos(a),y+h,z+r*Math.sin(a)));}
  for(i=0;i<n;i++){var j=(i+1)%n,ai=i/n*Math.PI*2,aj=j/n*Math.PI*2;this.face([lo[i],hi[i],hi[j],lo[j]],c,id,false,[[Math.cos(ai),0,Math.sin(ai)],[Math.cos(aj),0,Math.sin(aj)]]);}
  this.face(hi.slice().reverse(),top||c,id);this.face(lo.slice(),c,id);};
@@ -38,7 +38,7 @@ C.ladder=[219,204,107];C.air=[112,77,51];C.metal=[158,163,160];C.plaster=[204,20
 C.gravel=[156,150,140];C.beige=[214,192,150];C.cream=[238,234,220];C.fence=[132,138,142];C.slab=[184,182,174];C.gas=[214,186,64];
 
 /* ---- primitivas finas e arredondadas (tubos, anéis) para aparência de projeto ---- */
-M.prototype.tube=function(a,b,r,c,id,n,caps){this.o++;n=n||10;var d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],L=Math.hypot(d[0],d[1],d[2])||1e-4;d=[d[0]/L,d[1]/L,d[2]/L];
+M.prototype.tube=function(a,b,r,c,id,n,caps){this.o++;if(this.oy){a=[a[0],a[1]+this.oy,a[2]];b=[b[0],b[1]+this.oy,b[2]];}n=n||10;var d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],L=Math.hypot(d[0],d[1],d[2])||1e-4;d=[d[0]/L,d[1]/L,d[2]/L];
  var t=Math.abs(d[1])<.9?[0,1,0]:[1,0,0];var u=[d[1]*t[2]-d[2]*t[1],d[2]*t[0]-d[0]*t[2],d[0]*t[1]-d[1]*t[0]],ul=Math.hypot(u[0],u[1],u[2]);u=[u[0]/ul,u[1]/ul,u[2]/ul];
  var w=[d[1]*u[2]-d[2]*u[1],d[2]*u[0]-d[0]*u[2],d[0]*u[1]-d[1]*u[0]];var A=[],B=[],N=[];
  for(var i=0;i<n;i++){var g=i/n*Math.PI*2,cs=Math.cos(g),sn=Math.sin(g),nn=[u[0]*cs+w[0]*sn,u[1]*cs+w[1]*sn,u[2]*cs+w[2]*sn];N.push(nn);
@@ -93,6 +93,26 @@ M.prototype.tower=function(x,z,L,h,c,id,cb,sp){/* torre de aeração como no pro
  var px=x-S-.12,yt=top+.55;this.run([[px,0,z+S*.4],[px,yt,z+S*.4],[x,yt,z+S*.4],[x,yt,z],[x,top+.22,z]],C.beige,id,.045);
  /* escada marinheiro com gaiola até a bandeja do topo */
  this.cage(x,z+S+.06,top-.95,Math.PI/2,C.ladder,id);};
+M.prototype.parshall=function(cx,cz,un,c,id){/* caixa de areia + calha Parshall em PRFV sobre plataforma de concreto: a água chega pelo início do canal e sai no fim da calha para o floculador, por gravidade */
+ var self=this,B=un.b||0,L=un.d,W=un.wz,h=un.h,x0=cx-L/2,t=.05,bca=un.bca||.4,lca=un.lca||1.5,lp=L-lca-.4,wt=Math.max(.1,(un.pw||1)*.0254+.06),CO=C.conc;
+ if(B>0){var nx=Math.max(2,Math.ceil(L/2.2)+1);for(var i=0;i<nx;i++){var xx=x0+.15+(L-.3)*i/(nx-1);[-1,1].forEach(function(s){self.box(xx,0,cz+s*(W/2-.15),.25,B-.15,.25,CO,id);});}
+  this.box(cx,B-.15,cz,L,.15,W,CO,id);
+  this.cage(x0+L*.5,cz+W/2+.08,B,Math.PI/2,C.ladder,id);
+  /* guarda-corpo da plataforma */
+  [-1,1].forEach(function(s){self.tube([x0,B+1.0,cz+s*(W/2-.03)],[x0+L,B+1.0,cz+s*(W/2-.03)],.022,C.ladder,id,8);for(var k=0;k<=Math.round(L/1.2);k++){var xx=x0+L*k/Math.round(L/1.2);self.tube([xx,B,cz+s*(W/2-.03)],[xx,B+1.0,cz+s*(W/2-.03)],.02,C.ladder,id,8);}});}
+ this.oy=B;
+ function seg(xa,xb,w,fl){var xm=(xa+xb)/2,lx=xb-xa;self.box(xm,fl,cz,lx,t,w+2*t,c,id);self.box(xm,fl,cz-w/2-t/2,lx,h-fl,t,c,id);self.box(xm,fl,cz+w/2+t/2,lx,h-fl,t,c,id);}
+ var xa=x0+.2;seg(xa,xa+lca,bca,0);this.box(xa-t/2,0,cz,t,h,bca+2*t,c,id);
+ /* calha Parshall: convergente, garganta (com degrau) e divergente */
+ var x1=xa+lca,lc=lp*.45,lg=lp*.2,ld=lp*.35,N=5;
+ for(var i=0;i<N;i++){var w=bca+(wt-bca)*(i+.5)/N;seg(x1+lc*i/N,x1+lc*(i+1)/N,w,0);}
+ seg(x1+lc,x1+lc+lg,wt,-.0);this.box(x1+lc+lg*.5,0,cz,.04,.06,wt,C.dblue,id);
+ for(var i=0;i<N;i++){var w=wt+(bca*.8-wt)*(i+.5)/N;seg(x1+lc+lg+ld*i/N,x1+lc+lg+ld*(i+1)/N,w,0);}
+ /* dosagem de coagulante e de correção de pH no ressalto da calha */
+ var xd=x1+lc+lg*.5;[-1,1].forEach(function(s){self.tube([xd+s*.08,h+.6,cz+s*.25],[xd+s*.08,h+.25,cz+s*.25],.018,C.dark,id,8);self.tube([xd+s*.08,h+.25,cz+s*.25],[xd+s*.08,h+.25,cz],.018,C.dark,id,8);self.tube([xd+s*.08,h+.25,cz],[xd+s*.08,h*.55,cz],.012,C.dark,id,6);});
+ this.oy=0;
+ /* chegada da água bruta: tubo bege subindo até o início do canal */
+ this.run([[x0-.25,0,cz],[x0-.25,B+h-.12,cz],[x0+.3,B+h-.12,cz]],C.beige,id,.05);};
 M.prototype.htank=function(x,z,r,len,c,id){/* tanque horizontal SANEAR: boca de visita flangeada no topo, bocal flangeado lateral */
  this.box(x-len*.35,0,z,.3,.25,r*1.6,C.conc,-1);this.box(x+len*.35,0,z,.3,.25,r*1.6,C.conc,-1);
  this.hcyl(x,.25,z,r,len,c,id);
@@ -157,11 +177,12 @@ function eta(){var m=new M(),u=[];
  return{m:m,u:u,title:"ETA em PRFV",span:12,yaw:-.6};}
 
 /* modelo gerado pelo simulador: units=[{n,d,h,kind,label}] */
-function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.blue:C.green;
+function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.cream:C.green;
  /* afastamento padrão entre paredes dos tanques, tirado dos projetos SANEAR: 0,40 m nos tanques até Ø 1,50 m e cerca de 1/4 do diâmetro nos maiores (0,70 m no UASB Ø 2,00 m; 0,90 m nos de Ø 3,50 m) */
  function SP(w){return Math.max(.4,Math.round(w*.25*20)/20);}
- var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:rows*w+(rows-1)*g};});
+ var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
  function BG(a,b){return Math.max(a.g,b.g);}
+ var stk=items.filter(function(it){return it.un.on!=null}),items0=items;var psh=items.filter(function(it){return it.un.kind==="parshall"})[0];items=items.filter(function(it){return it.un.on==null&&it.un.kind!=="parshall"});
  var sum=items.reduce(function(s,it){return s+it.wid+it.g},0),lim=items.length>3?Math.max(6,sum/2+.5):1e9;
  /* distribui em fileiras (vai e volta), para o desenho ficar compacto */
  var rowsA=[[]],x=0;items.forEach(function(it){if(x>0&&x+it.wid>lim){rowsA.push([]);x=0;}rowsA[rowsA.length-1].push(it);x+=it.wid+it.g;});
@@ -169,12 +190,13 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
   var rw=0;r.forEach(function(it,k){rw+=it.wid+(k?BG(r[k-1],it):0);});W=Math.max(W,rw);
   if(ri)z+=Math.max(gg,prevG);
   var seq=ri%2?r.slice().reverse():r;xx=-rw/2;seq.forEach(function(it,k){if(k)xx+=BG(seq[k-1],it);it.x=xx;it.z=z+d/2;xx+=it.wid;});z+=d;prevG=gg;});
- var D=z;items.forEach(function(it){it.z-=D/2;});
+ var D=z;if(psh){/* calha Parshall no alto, atrás das unidades, terminando sobre o floculador */var fl=items0[items0.indexOf(psh)+1]||items[0],fcx=fl.x+fl.w/2;psh.x=fcx-psh.wid+.35;psh.z=D+.9+psh.depth/2;D+=.9+psh.depth;W=Math.max(W,psh.wid+2*Math.abs(fcx));items.push(psh);}
+ items.forEach(function(it){it.z-=D/2;});items=items0;stk.forEach(function(it){var t=items[it.un.on];it.x=t.x;it.z=t.z;it.rows=t.rows;it.cols=t.cols;it.g=t.g;it.w=Math.min(it.w,t.w);it.wid=t.wid;});
  /* terreno: grama, área em brita cercada por alambrado e base de concreto sob os tanques */
  var FW=W+3.2,FD=D+3.4;
  m.box(0,-.05,0,320,.05,320,C.grass,-2);m.box(0,-.02,0,FW,.04,FD,C.gravel,-2);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);
  m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);
- items.forEach(function(it,idx){var un=it.un,id=idx,top=0;it.cs=[];
+ items.forEach(function(it,idx){var un=it.un,id=idx,top=0,B0=un.b||0;it.cs=[];
   for(var k=0;k<un.n;k++){var c=k%it.cols,r=Math.floor(k/it.cols);var cx=it.x+c*(it.w+it.g)+it.w/2,cz=it.z+(r-(it.rows-1)/2)*(it.w+it.g);it.cs.push([cx,cz]);
    if(un.kind==="torre"){m.tower(cx,cz,un.d,un.h,col,id,un.out,un.sp);}
    else if(un.kind==="casa"){if(!m.tpl("casa",cx,.15,cz,0,un.d/1.65,un.h/2.65,un.d*.8/1.65,col,id))m.house(cx,cz,un.d,un.h,un.d*.8,id);}
@@ -182,25 +204,35 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
    else if(un.kind==="elev"||un.kind==="prelim"){/* unidade enterrada: só aparecem o colar de concreto e as tampas metálicas no nível do piso */
     var lw=un.d,ld=un.kind==="elev"?un.d:un.d*.6;m.box(cx,0,cz,lw+.3,.2,ld+.3,C.conc,id);
     var nt=un.kind==="elev"?2:3;for(var g=0;g<nt;g++){var tw=(lw-.1)/nt;m.box(cx-lw/2+.05+tw*(g+.5),.2,cz,tw-.04,.025,ld-.1,C.metal,id);m.box(cx-lw/2+.05+tw*(g+.5),.225,cz+ld/2-.18,.12,.02,.03,[51,54,54],id);}}
+   else if(un.kind==="parshall"){m.parshall(cx,cz,un,col,id);}
+   else if(B0>0&&un.kind!=="torre"){/* unidade elevada para escoar por gravidade: base de concreto, ou em cima da unidade anterior */
+    if(un.on!=null)m.box(cx,B0-.15,cz,un.d+.1,.15,un.d+.1,C.conc,id);else m.box(cx,0,cz,un.d+.4,B0,un.d+.4,C.conc,id);
+    m.oy=B0;m.nologo=un.on!=null;m.stank(cx,cz,un.d/2,un.h,col,id,un.on==null&&un.h+B0>2.6?Math.PI/2:undefined);m.oy=0;m.nologo=false;}
    else if(eta&&/Filtro/.test(un.label)){/* filtro como no projeto: tanque vertical em PRFV branco, escada com gaiola azul no último filtro */
     m.stank(cx,cz,un.d/2,un.h,C.cream,id);if(k===un.n-1){var lt=PECAS&&PECAS.ladder,la=0,rr=un.d/2;if(lt)m.tpl("ladder",cx+(rr-lt.r0),0,cz,la-Math.PI,1,(un.h+1.08)/(lt.h0+1.08),1,C.ladder,id);else m.cage(cx+rr+.06,cz,un.h,la,C.ladder,id);}}
    else{m.stank(cx,cz,un.d/2,un.h,col,id,un.h>2.6?Math.PI/2:undefined);}
-   top=Math.max(top,un.h);}
+   top=Math.max(top,B0+un.h);}
   it.cx=it.x+it.wid/2;
-  var g0=it.cs[0];u.push({id:id,n:un.label,t:un.info||"",at:[it.cx,top+1.15,it.z],g:(un.kind==="casa"||un.kind==="prelim"||un.kind==="elev"||un.nod)?null:{x:g0[0],z:g0[1],r:un.d/2,h:un.h,sq:un.kind==="torre",n:un.n}});});
+  var g0=it.cs[0];u.push({id:id,n:un.label,t:un.info||"",at:[it.cx,top+1.15,it.z],g:(un.kind==="casa"||un.kind==="prelim"||un.kind==="elev"||un.nod)?null:{x:g0[0],z:g0[1],y0:B0,r:un.d/2,h:un.h,sq:un.kind==="torre",n:un.n}});});
  var lk=items.filter(function(it){return it.un.kind!=="casa"&&it.un.kind!=="gas"});
  /* tubulações no mesmo traçado do projeto Revit da SANEAR */
  var ESG=C.pipe,AF=C.air,RE=.05,RA=.03;
  function rad(it){return it.un.kind==="torre"?it.w*.67:(it.un.kind==="prelim"||it.un.kind==="elev")?0:it.w/2;}
  function near(it,P){var best=it.cs[0],bd=1e9;it.cs.forEach(function(c){var d=Math.hypot(c[0]-P[0],c[1]-P[1]);if(d<bd){bd=d;best=c;}});return best;}
  function ortho(a,b,y){/* caminho em L no plano, como tubulação real */var pts=[[a[0],y,a[1]]];if(Math.abs(a[0]-b[0])>.01&&Math.abs(a[1]-b[1])>.01)pts.push([b[0],y,a[1]]);pts.push([b[0],y,b[1]]);return pts;}
- for(var i=0;i<lk.length-1;i++){var p=lk[i],q=lk[i+1];
+ function HB(it){return it.un.b||0;}
+ lk.forEach(function(p,i){var q=lk[i+1];if(p.un.kind!=="parshall"||!q)return;/* saída no fim da calha: desce por fora e entra no alto do floculador */
+  var xe=p.x+p.wid,cz=p.z,c0=near(q,[xe,cz]),yt=HB(q)+q.un.h,yo=HB(p)+.1;
+  var pts=[[xe-.25,yo,cz]].concat(ortho([xe+.15,cz],[c0[0]+.15,c0[1]+q.w*.3],yo));pts.push([c0[0]+.15,yt,c0[1]+q.w*.3]);m.run(pts,C.pipe,-1,.05);});
+ for(var i=0;i<lk.length-1;i++){var p=lk[i],q=lk[i+1];if(p.un.kind==="parshall")continue;
+  if(p.un.on!=null&&lk.indexOf(items[p.un.on])===i+1){/* coagulação em cima do floculador: sai pela lateral, desce e entra no alto do floculador */
+   p.cs.forEach(function(c){var rr=p.w/2,yo=HB(p)+.3,yi=HB(q)+q.un.h-.3;m.run([[c[0]-rr+.03,yo,c[1]],[c[0]-rr-.25,yo,c[1]],[c[0]-rr-.25,yi,c[1]],[c[0]-q.w/2+.03,yi,c[1]]],C.pipe,-1,.05);});continue;}
   if(p.un.kind==="prelim"&&q.un.kind==="elev")continue;/* ligação enterrada, como no projeto */
   if(p.un.kind==="prelim"||p.un.kind==="elev"){/* recalque da elevatória: PVC marrom pelo chão, sobe pela parede do reator e entra pelo topo */
    var A=[p.cx,p.z],B=near(q,A),rq=rad(q),dx=A[0]-B[0],dz=A[1]-B[1],dl=Math.hypot(dx,dz)||1,WP=[B[0]+dx/dl*(rq+.12),B[1]+dz/dl*(rq+.12)],T=[B[0]+dx/dl*(rq*.55),B[1]+dz/dl*(rq*.55)];
    var pts=ortho([A[0],A[1]],WP,-.35);var top=q.un.h+.18;pts.push([WP[0],top,WP[1]],[T[0],top,T[1]],[T[0],q.un.h,T[1]]);m.run(pts,AF,-1,RA);continue;}
   if(eta&&/Filtro/.test(q.un.label)&&p.un.kind!=="prelim"){/* filtros ascendentes, como no projeto da ETA SANEAR: barrilete no piso com uma entrada individual pelo fundo de cada filtro; saída pelo alto de cada filtro */
-   var R=q.w/2,yb=.32,yo=q.un.h-.25,zH=q.z-q.depth/2-.45,A=near(p,[q.cx,zH]),rp=rad(p),sx=q.cx>=A[0]?1:-1,tw=p.un.kind==="torre",E=[A[0]+sx*(tw?p.w*.6:rp-.05),A[1]],O=tw?E:[A[0]+sx*(rp+.2),A[1]],y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):p.un.h-.5;
+   var R=q.w/2,yb=.32,yo=q.un.h-.25,zH=q.z-q.depth/2-.45,A=near(p,[q.cx,zH]),rp=rad(p),sx=q.cx>=A[0]?1:-1,tw=p.un.kind==="torre",E=[A[0]+sx*(tw?p.w*.6:rp-.05),A[1]],O=tw?E:[A[0]+sx*(rp+.2),A[1]],y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):HB(p)+p.un.h-.5;
    var PB=C.beige,xs=q.cs.map(function(c){return c[0]}),x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs);
    if(tw)m.run([[A[0],y1+.02,A[1]],[A[0],yb,A[1]],[A[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);else m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],yb,O[1]],[O[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);
    q.cs.forEach(function(c){var front=c[1]<=q.z+.01;
@@ -213,13 +245,13 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
     m.run([[sx>0?xa:xb,yo,zc],[xe,yo,zc],[xe,-.05,zc]],PB,-1,RE);});
    continue;}
   var A=near(p,[q.cx,q.z]),B=near(q,A),ux=B[0]-A[0],uz=B[1]-A[1],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;
-  var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:q.un.h-.25;
+  var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):HB(p)+p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:HB(q)+q.un.h-.25;
   var E=[A[0]+ux*(rp-.05),A[1]+uz*(rp-.05)],O=[A[0]+ux*(rp+.18),A[1]+uz*(rp+.18)],N=[B[0]-ux*(rq-.05),B[1]-uz*(rq-.05)];
   if(y2<y1-.05&&q.un.kind!=="torre"){/* sai pela lateral no alto, desce no vão entre os tanques e entra pela lateral no alto do próximo */
    var g=(rp+.18<L-rq-.1)?Math.min(.5,(L-rp-rq)/2):(L-rp-rq)/2,G=[A[0]+ux*(rp+g),A[1]+uz*(rp+g)];
    m.run([[E[0],y1,E[1]],[G[0],y1,G[1]],[G[0],y2,G[1]],[N[0],y2,N[1]]],ESG,-1,RE);}
-  else{/* próximo mais alto: sobe por fora e entra por cima */var top=Math.max(y1,q.un.h)+.3,T=[B[0]-ux*rq*.5,B[1]-uz*rq*.5];
-   m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],top,O[1]],[T[0],top,T[1]],[T[0],q.un.h,T[1]]],ESG,-1,RE);}}
+  else{/* próximo mais alto: sobe por fora e entra por cima */var qt=HB(q)+q.un.h,top=Math.max(y1,qt)+.3,T=[B[0]-ux*rq*.5,B[1]-uz*rq*.5];
+   m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],top,O[1]],[T[0],top,T[1]],[T[0],qt,T[1]]],ESG,-1,RE);}}
  /* saída do efluente tratado: lateral do último tanque, descendo até o chão */
  if(!eta&&lk.length){var z0=lk[lk.length-1],c0=z0.cs[z0.cs.length-1],r0=rad(z0),pv=lk.length>1?lk[lk.length-2]:null,ox=pv?(c0[0]>=pv.cx?1:-1):1;
   m.run([[c0[0]+ox*(r0-.05),z0.un.h-.45,c0[1]],[c0[0]+ox*(r0+.25),z0.un.h-.45,c0[1]],[c0[0]+ox*(r0+.25),-.05,c0[1]]],ESG,-1,RE);}
@@ -557,9 +589,9 @@ View.prototype.drawCotas=function(ctx){var self=this,cy=Math.cos(this.yaw),sy=Ma
  function tick(p,ang){var dx=Math.cos(ang)*5,dy=Math.sin(ang)*5;ctx.beginPath();ctx.moveTo(p[0]-dx,p[1]-dy);ctx.lineTo(p[0]+dx,p[1]+dy);ctx.stroke();}
  this.mod.u.forEach(function(u){var g=u.g;if(!g)return;if(self.sel>=0&&self.sel!==u.id)return;ctx.strokeStyle="#0b2f6e";
   var r=g.sq?g.r*Math.SQRT2:g.r,off=r+.32,bx=g.x+R[0]*off,bz=g.z+R[2]*off;
-  var a=self.tf([bx,0,bz]),b=self.tf([bx,g.h,bz]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();var an=Math.atan2(b[1]-a[1],b[0]-a[0])+Math.PI/4;tick(a,an);tick(b,an);
+  var a=self.tf([bx,g.y0||0,bz]),b=self.tf([bx,(g.y0||0)+g.h,bz]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();var an=Math.atan2(b[1]-a[1],b[0]-a[0])+Math.PI/4;tick(a,an);tick(b,an);
   lab(f2(g.h)+" m",(a[0]+b[0])/2+6,(a[1]+b[1])/2,"left");
-  var yt=g.h+.12,p=self.tf([g.x-R[0]*g.r,yt,g.z-R[2]*g.r]),q=self.tf([g.x+R[0]*g.r,yt,g.z+R[2]*g.r]);
+  var yt=(g.y0||0)+g.h+.12,p=self.tf([g.x-R[0]*g.r,yt,g.z-R[2]*g.r]),q=self.tf([g.x+R[0]*g.r,yt,g.z+R[2]*g.r]);
   ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();var aq=Math.atan2(q[1]-p[1],q[0]-p[0])+Math.PI/4;tick(p,aq);tick(q,aq);
   lab((g.sq?"":"Ø ")+f2(g.r*2)+(g.sq?" × "+f2(g.r*2):"")+" m"+(g.n>1?"  ("+g.n+"×)":""),(p[0]+q[0])/2,(p[1]+q[1])/2-12);});
  ctx.restore();};
