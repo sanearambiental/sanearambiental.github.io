@@ -69,7 +69,7 @@ function ete0(Qmed,ctx,f4){
  var tc=td.V/qh*60;
  R.push(["Desinfecção (TD)","Tempo de contato com cloro (vazão média)",fmt(tc,0)+" min","≥ 30 min","NBR 12209:2011",tc>=30-1e-6]);
  /* Filtros de biogás: carvão ativado, troca mensal, forma Ø0,60 × 1,00 m (método do memorial SANEAR) */
- var mca=Qmed/451.2*1.564,kgf=Math.PI*0.09*0.6*500,nbg=Math.max(1,Math.ceil(mca*30/kgf));
+ var mca=Qmed/451.2*1.564,kgf=Math.PI*0.09*0.6*500,nbg=Math.max(1,Math.ceil(mca*30/kgf));if(ua.d>3)nbg=Math.max(nbg,ua.n);/* UASB acima de Ø 3,00 m: um filtro de biogás para cada reator */
  var S2=S1*(1-.85),ef=(1-S2/S0)*100;/* FAS remove 85% (planilha SANEAR) */
  R.push(["Efluente tratado","DBO estimada na saída",fmt(S2,0)+" mg/L ("+fmt(ef,0)+"% de remoção)","≤ 120 mg/L","CONAMA 430/2011, art. 21",S2<=120]);
  U.push({label:"Tratamento preliminar",kind:"prelim",n:1,d:Math.min(3.5,1.6+Qmed/400),h:.8,info:"Grade, caixa de areia e medidor de vazão, em concreto. Retêm sólidos grosseiros e areia (NBR 12209).",nodim:true});
@@ -78,7 +78,7 @@ function ete0(Qmed,ctx,f4){
  R.push(["Estação elevatória","Volume útil do poço (ciclo de 10 min)",f2(vel)+" m³","≥ "+f2(qb*10/4)+" m³","NBR 12208:2020",true]);
  U.push({label:"Estação elevatória",kind:"elev",n:1,d:le,h:.8,info:"Poço em concreto de "+f2(le)+" × "+f2(le)+" m com duas bombas submersíveis (uma reserva), volume útil de "+f2(vel)+" m³ para ciclo de 10 min (NBR 12208). Recalca o esgoto até o reator UASB.",nodim:true});
  U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de "+fmt(eU*100,0)+"% da DBO."});
- U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). Quantidade para troca do carvão a cada 30 dias: consumo estimado de "+f2(mca)+" kg/dia."});
+ U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). "+(ua.d>3?"Um filtro para cada reator UASB. Consumo":"Quantidade para troca do carvão a cada 30 dias: consumo")+" estimado de "+f2(mca)+" kg/dia."});
  U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
  U.push({label:"Decantador secundário (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});
  U.push({label:"Tanque de desinfecção (TD)",n:td.n,d:td.d,h:td.hu+.5,hu:td.hu,v:td.v,info:"Contato com cloro por "+fmt(tc,0)+" min na vazão média (mínimo de 30 min)."});
