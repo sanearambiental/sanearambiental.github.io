@@ -93,8 +93,8 @@ function eta(Qp,ctx){
  else{R.push(["Correção de pH","Dosagem","na tubulação de entrada da torre","bomba dosadora","Critério de projeto SANEAR",true]);
   etapas.push("correção de pH na tubulação (bomba dosadora)");}
  /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
- if(aera){var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
-  R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
+ if(aera){/* taxa nas bandejas reduzida com o ferro: mais ferro, mais tempo de contato com o ar, torre mais larga */var TA=fe<=1?40:fe<=3?30:fe<=6?25:20;var ta=Math.max(.9,Math.sqrt(Qh/TA)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/TA/(2.2*2.2));ta=Math.sqrt(Qh/TA/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
+  R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ "+TA+" m³/m²·h"+(TA<40?" (ferro "+f2(fe)+" mg/L)":""),"Literatura técnica (aerador de bandejas)",tx<=TA+1e-6]);
   R.push(["Torre de aeração","Número de bandejas","5","≥ 3","Literatura técnica",true]);
   var hto=HF+.5,esp=.5,hT=Math.round((hto+5*esp+.4)*100)/100;/* bandeja coletora 0,50 m acima do topo dos filtros (gravidade); 5 bandejas espaçadas 0,50 m (faixa de 0,30 a 0,75 m) */
   R.push(["Torre de aeração","Espaçamento entre bandejas",f2(esp)+" m","0,30 a 0,75 m","NBR 12216 / literatura técnica",true]);
