@@ -96,8 +96,10 @@ function eta(Qp,ctx){
  if(aera){var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
   R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
   R.push(["Torre de aeração","Número de bandejas","5","≥ 3","Literatura técnica",true]);
-  var hto=HF+.5,hT=Math.ceil((hto+Math.max(2,ta+1.2))*10)/10;/* saída da torre 0,50 m acima do topo dos filtros: a água segue por gravidade */
-  U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:hT,out:hto,sq:true,info:"Torre com "+f2(hT)+" m de altura e saída a "+f2(hto)+" m, acima dos filtros: a água segue por gravidade. 5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
+  var hto=HF+.5,esp=.5,hT=Math.round((hto+5*esp+.4)*100)/100;/* bandeja coletora 0,50 m acima do topo dos filtros (gravidade); 5 bandejas espaçadas 0,50 m (faixa de 0,30 a 0,75 m) */
+  R.push(["Torre de aeração","Espaçamento entre bandejas",f2(esp)+" m","0,30 a 0,75 m","NBR 12216 / literatura técnica",true]);
+  R.push(["Torre de aeração","Bandeja coletora acima do topo dos filtros",f2(hto)+" m",">"+" "+f2(HF)+" m (escoamento por gravidade)","Critério de projeto SANEAR",hto>HF]);
+  U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:hT,out:hto,sp:esp,sq:true,info:"Torre com "+f2(hT)+" m de altura. Bandeja coletora a "+f2(hto)+" m, acima dos filtros: a água cai por gravidade nos filtros. 5 bandejas de "+f2(ta)+" × "+f2(ta)+" m espaçadas "+f2(esp)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
   etapas.push("torre de aeração");}
  /* Pré-oxidação do manganês: o ar não oxida o manganês, precisa de oxidante (cloro ou permanganato) */
  if(temMn){var po=pickH(Qh/3,aera?HF:1.2);/* entre a torre e os filtros: nível acima dos filtros, para seguir por gravidade */big=big||po.big;var tpo=po.V/Qh*60;
@@ -120,7 +122,7 @@ function eta(Qp,ctx){
  if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(temMn)R.push(["Água bruta","Manganês",f2(mn)+" mg/L","≤ 0,1 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT","≤ 5 uT na água tratada (tratamento convencional)","Portaria GM/MS nº 888/2021",true]);
- U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
+ U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros ascendentes em PRFV: a água entra pelo fundo de cada filtro (entrada individual a partir do barrilete) e sai pelo alto. Taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
  etapas.push("filtração");
  R.push(["Desinfecção","Local da cloração","no reservatório de água tratada","tempo de contato ≥ 30 min","Portaria GM/MS nº 888/2021",true]);
  if(rio&&temMn){/* na água de rio, a pré-oxidação vem antes da coagulação */var iu=U.findIndex(function(u){return/Pré-oxidação/.test(u.label)});U.unshift(U.splice(iu,1)[0]);var ie=etapas.indexOf("pré-oxidação do manganês");etapas.unshift(etapas.splice(ie,1)[0]);}

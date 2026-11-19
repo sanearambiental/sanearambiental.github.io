@@ -35,7 +35,7 @@ M.prototype.rail=function(x,z,r,y,c,id){var n=16;for(var i=0;i<n;i++){var a=i/n*
  var q=V(x+r*Math.cos(a2),y,z+r*Math.sin(a2));this.pipe([p[0],y+.9,p[2]],[q[0],y+.9,q[2]],c,id);}};
 
 C.ladder=[219,204,107];C.air=[112,77,51];C.metal=[158,163,160];C.plaster=[204,201,191];C.conc=[168,166,158];C.grass=[78,96,58];C.lid=[110,114,116];C.raw=[205,175,105];
-C.gravel=[156,150,140];C.fence=[132,138,142];C.slab=[184,182,174];C.gas=[214,186,64];
+C.gravel=[156,150,140];C.beige=[214,192,150];C.cream=[238,234,220];C.fence=[132,138,142];C.slab=[184,182,174];C.gas=[214,186,64];
 
 /* ---- primitivas finas e arredondadas (tubos, anéis) para aparência de projeto ---- */
 M.prototype.tube=function(a,b,r,c,id,n,caps){this.o++;n=n||10;var d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],L=Math.hypot(d[0],d[1],d[2])||1e-4;d=[d[0]/L,d[1]/L,d[2]/L];
@@ -73,14 +73,26 @@ M.prototype.vtank=function(x,z,r,h,c,id,ladAng){/* tanque vertical SANEAR em PRF
  this.tube([x+r+.15,.35,z],[x+r+.19,.35,z],.11,C.pvc,id,14);this.tube([x,h*.82,z+r+.15],[x,h*.82,z+r+.19],.11,C.pvc,id,14);
  if(ladAng!==undefined)this.cage(x+(r+.12)*Math.cos(ladAng),z+(r+.12)*Math.sin(ladAng),h,ladAng,C.ladder,id);};
 
-M.prototype.tower=function(x,z,L,h,c,id){/* torre de aeração em PRFV: estrutura tubular, bandejas finas com bordas, distribuidor no topo */
- var b=h*.4,s=L*.5;[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(o){this.tube([x+o[0]*s,0,z+o[1]*s],[x+o[0]*s,h,z+o[1]*s],.045,C.grey,id,10);}.bind(this));
- for(var yy=.5;yy<b;yy+=.6){this.tube([x-s,yy,z-s],[x+s,yy,z-s],.02,C.grey,id,6);this.tube([x-s,yy,z+s],[x+s,yy,z+s],.02,C.grey,id,6);}
- this.box(x,b,z,L*1.12,.06,L*1.12,c,id);this.box(x,b+.06,z-L*.56,L*1.12,.18,.03,c,id);this.box(x,b+.06,z+L*.56,L*1.12,.18,.03,c,id);this.box(x-L*.56,b+.06,z,.03,.18,L*1.12,c,id);this.box(x+L*.56,b+.06,z,.03,.18,L*1.12,c,id);
- var nt=5,st=(h-b-.5)/nt;for(var t=1;t<=nt;t++){var y=b+t*st;this.box(x,y,z,L,.035,L,c,id);
-  this.box(x,y+.035,z-L/2,L,.1,.025,c,id);this.box(x,y+.035,z+L/2,L,.1,.025,c,id);this.box(x-L/2,y+.035,z,.025,.1,L,c,id);this.box(x+L/2,y+.035,z,.025,.1,L,c,id);
-  for(var g=0;g<5;g++)for(var k=0;k<5;k++)this.cyl(x-L*.4+g*L*.2,y+.036,z-L*.4+k*L*.2,.035,.004,C.dblue,id,6);}
- this.tube([x-L*.35,h-.1,z],[x+L*.35,h-.1,z],.05,C.pipe,id,10);this.tube([x,h-.1,z-L*.35],[x,h-.1,z+L*.35],.05,C.pipe,id,10);};
+M.prototype.tower=function(x,z,L,h,c,id,cb,sp){/* torre de aeração como no projeto da ETA SANEAR: base de concreto, estrutura metálica azul com contraventamento em X, bandeja coletora larga no topo da estrutura, bandejas de aeração empilhadas, distribuidor e escada com gaiola */
+ var self=this,B=cb||h*.4,bz=.35,S=L*.5,BL=C.blue,nt=5,st=sp||.5;
+ this.box(x,0,z,L+.6,bz,L+.6,C.conc,id);
+ [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(o){self.tube([x+o[0]*S,bz,z+o[1]*S],[x+o[0]*S,B,z+o[1]*S],.055,BL,id,12);self.box(x+o[0]*S,bz,z+o[1]*S,.22,.02,.22,BL,id);});
+ var np=Math.max(2,Math.round((B-bz)/1.3)),ph=(B-bz)/np;
+ var faces=[[[-1,-1],[1,-1]],[[1,-1],[1,1]],[[1,1],[-1,1]],[[-1,1],[-1,-1]]];
+ for(var i=0;i<=np;i++){var y=bz+i*ph;faces.forEach(function(f){self.tube([x+f[0][0]*S,y,z+f[0][1]*S],[x+f[1][0]*S,y,z+f[1][1]*S],.035,BL,id,8);});
+  if(i<np){var y2=y+ph;faces.forEach(function(f){self.tube([x+f[0][0]*S,y,z+f[0][1]*S],[x+f[1][0]*S,y2,z+f[1][1]*S],.028,BL,id,8);self.tube([x+f[1][0]*S,y,z+f[1][1]*S],[x+f[0][0]*S,y2,z+f[0][1]*S],.028,BL,id,8);});}}
+ /* bandeja coletora: mais larga que as bandejas, com bordas altas; a água sai dela por gravidade para os filtros */
+ var CL=L*1.3,rh=.3;this.box(x,B,z,CL,.06,CL,BL,id);
+ [[0,-1],[0,1]].forEach(function(o){self.box(x,B+.06,z+o[1]*CL/2,CL,rh,.04,BL,id);});[[-1,0],[1,0]].forEach(function(o){self.box(x+o[0]*CL/2,B+.06,z,.04,rh,CL,BL,id);});
+ /* bandejas de aeração, espaçadas sp, apoiadas em montantes nos cantos */
+ var top=B+nt*st;[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(o){self.tube([x+o[0]*L*.48,B+.06,z+o[1]*L*.48],[x+o[0]*L*.48,top+.2,z+o[1]*L*.48],.025,BL,id,8);});
+ for(var t=1;t<=nt;t++){var y=B+t*st,TL=t===nt?L:L*.96;this.box(x,y,z,TL,.04,TL,BL,id);
+  this.box(x,y+.04,z-TL/2,TL,.16,.03,BL,id);this.box(x,y+.04,z+TL/2,TL,.16,.03,BL,id);this.box(x-TL/2,y+.04,z,.03,.16,TL,BL,id);this.box(x+TL/2,y+.04,z,.03,.16,TL,BL,id);
+  for(var g=0;g<5;g++)for(var k=0;k<5;k++)this.cyl(x-TL*.4+g*TL*.2,y+.041,z-TL*.4+k*TL*.2,.03,.004,C.dblue,id,6);}
+ /* recalque do poço: tubo bege subindo pela lateral da torre e descendo no centro da bandeja do topo */
+ var px=x-S-.12,yt=top+.55;this.run([[px,0,z+S*.4],[px,yt,z+S*.4],[x,yt,z+S*.4],[x,yt,z],[x,top+.22,z]],C.beige,id,.045);
+ /* escada marinheiro com gaiola até a bandeja do topo */
+ this.cage(x,z+S+.06,top-.95,Math.PI/2,C.ladder,id);};
 M.prototype.htank=function(x,z,r,len,c,id){/* tanque horizontal SANEAR: boca de visita flangeada no topo, bocal flangeado lateral */
  this.box(x-len*.35,0,z,.3,.25,r*1.6,C.conc,-1);this.box(x+len*.35,0,z,.3,.25,r*1.6,C.conc,-1);
  this.hcyl(x,.25,z,r,len,c,id);
@@ -164,12 +176,14 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
  m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);
  items.forEach(function(it,idx){var un=it.un,id=idx,top=0;it.cs=[];
   for(var k=0;k<un.n;k++){var c=k%it.cols,r=Math.floor(k/it.cols);var cx=it.x+c*(it.w+it.g)+it.w/2,cz=it.z+(r-(it.rows-1)/2)*(it.w+it.g);it.cs.push([cx,cz]);
-   if(un.kind==="torre"){m.tower(cx,cz,un.d,un.h,col,id);}
+   if(un.kind==="torre"){m.tower(cx,cz,un.d,un.h,col,id,un.out,un.sp);}
    else if(un.kind==="casa"){if(!m.tpl("casa",cx,.15,cz,0,un.d/1.65,un.h/2.65,un.d*.8/1.65,col,id))m.house(cx,cz,un.d,un.h,un.d*.8,id);}
    else if(un.kind==="gas"){if(!m.tpl("gas",cx,.15,cz,0,un.d/2/.32,un.h/1.05,un.d/2/.32,col,id))m.vtank(cx,cz,un.d/2,un.h,col,id);else m.circ.push([cx,cz,un.d/2]);}
    else if(un.kind==="elev"||un.kind==="prelim"){/* unidade enterrada: só aparecem o colar de concreto e as tampas metálicas no nível do piso */
     var lw=un.d,ld=un.kind==="elev"?un.d:un.d*.6;m.box(cx,0,cz,lw+.3,.2,ld+.3,C.conc,id);
     var nt=un.kind==="elev"?2:3;for(var g=0;g<nt;g++){var tw=(lw-.1)/nt;m.box(cx-lw/2+.05+tw*(g+.5),.2,cz,tw-.04,.025,ld-.1,C.metal,id);m.box(cx-lw/2+.05+tw*(g+.5),.225,cz+ld/2-.18,.12,.02,.03,[51,54,54],id);}}
+   else if(eta&&/Filtro/.test(un.label)){/* filtro como no projeto: tanque vertical em PRFV branco, escada com gaiola azul no último filtro */
+    m.stank(cx,cz,un.d/2,un.h,C.cream,id);if(k===un.n-1){var lt=PECAS&&PECAS.ladder,la=0,rr=un.d/2;if(lt)m.tpl("ladder",cx+(rr-lt.r0),0,cz,la-Math.PI,1,(un.h+1.08)/(lt.h0+1.08),1,C.ladder,id);else m.cage(cx+rr+.06,cz,un.h,la,C.ladder,id);}}
    else{m.stank(cx,cz,un.d/2,un.h,col,id,un.h>2.6?Math.PI/2:undefined);}
    top=Math.max(top,un.h);}
   it.cx=it.x+it.wid/2;
@@ -177,7 +191,7 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
  var lk=items.filter(function(it){return it.un.kind!=="casa"&&it.un.kind!=="gas"});
  /* tubulações no mesmo traçado do projeto Revit da SANEAR */
  var ESG=C.pipe,AF=C.air,RE=.05,RA=.03;
- function rad(it){return it.un.kind==="torre"?it.w*.56:(it.un.kind==="prelim"||it.un.kind==="elev")?0:it.w/2;}
+ function rad(it){return it.un.kind==="torre"?it.w*.67:(it.un.kind==="prelim"||it.un.kind==="elev")?0:it.w/2;}
  function near(it,P){var best=it.cs[0],bd=1e9;it.cs.forEach(function(c){var d=Math.hypot(c[0]-P[0],c[1]-P[1]);if(d<bd){bd=d;best=c;}});return best;}
  function ortho(a,b,y){/* caminho em L no plano, como tubulação real */var pts=[[a[0],y,a[1]]];if(Math.abs(a[0]-b[0])>.01&&Math.abs(a[1]-b[1])>.01)pts.push([b[0],y,a[1]]);pts.push([b[0],y,b[1]]);return pts;}
  for(var i=0;i<lk.length-1;i++){var p=lk[i],q=lk[i+1];
@@ -185,6 +199,19 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
   if(p.un.kind==="prelim"||p.un.kind==="elev"){/* recalque da elevatória: PVC marrom pelo chão, sobe pela parede do reator e entra pelo topo */
    var A=[p.cx,p.z],B=near(q,A),rq=rad(q),dx=A[0]-B[0],dz=A[1]-B[1],dl=Math.hypot(dx,dz)||1,WP=[B[0]+dx/dl*(rq+.12),B[1]+dz/dl*(rq+.12)],T=[B[0]+dx/dl*(rq*.55),B[1]+dz/dl*(rq*.55)];
    var pts=ortho([A[0],A[1]],WP,-.35);var top=q.un.h+.18;pts.push([WP[0],top,WP[1]],[T[0],top,T[1]],[T[0],q.un.h,T[1]]);m.run(pts,AF,-1,RA);continue;}
+  if(eta&&/Filtro/.test(q.un.label)&&p.un.kind!=="prelim"){/* filtros ascendentes, como no projeto da ETA SANEAR: barrilete no piso com uma entrada individual pelo fundo de cada filtro; saída pelo alto de cada filtro */
+   var R=q.w/2,yb=.32,yo=q.un.h-.25,zH=q.z-q.depth/2-.45,A=near(p,[q.cx,zH]),rp=rad(p),sx=q.cx>=A[0]?1:-1,tw=p.un.kind==="torre",E=[A[0]+sx*(tw?p.w*.6:rp-.05),A[1]],O=tw?E:[A[0]+sx*(rp+.2),A[1]],y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):p.un.h-.5;
+   var PB=C.beige,xs=q.cs.map(function(c){return c[0]}),x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs);
+   if(tw)m.run([[A[0],y1+.02,A[1]],[A[0],yb,A[1]],[A[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);else m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],yb,O[1]],[O[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);
+   q.cs.forEach(function(c){var front=c[1]<=q.z+.01;
+    if(front||q.rows===1)m.run([[c[0],yb,zH],[c[0],yb,c[1]-R+.04]],PB,-1,RE*.85);
+    else{var gx=c[0]+(c[0]<q.x+q.wid-q.w?1:-1)*(R+q.g/2);m.run([[gx,yb,zH],[gx,yb,c[1]],[c[0]+(gx>c[0]?1:-1)*(R-.04),yb,c[1]]],PB,-1,RE*.85);}});
+   var rowsZ={};q.cs.forEach(function(c){var k=c[1].toFixed(2);(rowsZ[k]=rowsZ[k]||[]).push(c);});
+   Object.keys(rowsZ).forEach(function(k){var cs=rowsZ[k],cz=+k,s=(q.rows===1||cz>q.z+.01)?1:-1;var zc=cz+s*(R+.35);
+    cs.forEach(function(c){m.run([[c[0],yo,c[1]+s*(R-.04)],[c[0],yo,zc]],PB,-1,RE*.85);});
+    var xa=Math.min.apply(0,cs.map(function(c){return c[0]})),xb=Math.max.apply(0,cs.map(function(c){return c[0]})),xe=(sx>0?xb:xa)+sx*(R+.4);
+    m.run([[sx>0?xa:xb,yo,zc],[xe,yo,zc],[xe,-.05,zc]],PB,-1,RE);});
+   continue;}
   var A=near(p,[q.cx,q.z]),B=near(q,A),ux=B[0]-A[0],uz=B[1]-A[1],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;
   var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:q.un.h-.25;
   var E=[A[0]+ux*(rp-.05),A[1]+uz*(rp-.05)],O=[A[0]+ux*(rp+.18),A[1]+uz*(rp+.18)],N=[B[0]-ux*(rq-.05),B[1]-uz*(rq-.05)];
@@ -375,7 +402,7 @@ GLR.prototype.targets=function(W,H){var gl=this.gl,w=Math.max(1,W>>1),h=Math.max
  function fbo(c,d){var f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,c,0);if(d)gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,d,0);return f;}
  this.fN=fbo(this.tN,this.tD);this.fA=fbo(this.tA);this.fB=fbo(this.tB);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
  this.tts=[this.tN,this.tD,this.tA,this.tB];this.fbs=[this.fN,this.fA,this.fB];gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.shOK?this.sm:null);};
-var MATOF=function(c){if(c===C.conc||c===C.base||c===C.lid||c===C.slab||c===C.plaster)return 1;if(c===C.metal)return 5;if(c===C.grass)return 2;if(c===C.gravel)return 4;if(c===C.fence)return 5;if(c===C.ladder||c===C.pipe||c===C.air||c===C.dark||c===C.panel||c===C.orange||c===C.gas||c===C.pvc)return 3;return 0;};
+var MATOF=function(c){if(c===C.conc||c===C.base||c===C.lid||c===C.slab||c===C.plaster)return 1;if(c===C.metal)return 5;if(c===C.grass)return 2;if(c===C.gravel)return 4;if(c===C.fence)return 5;if(c===C.ladder||c===C.beige||c===C.pipe||c===C.air||c===C.dark||c===C.panel||c===C.orange||c===C.gas||c===C.pvc)return 3;return 0;};
 GLR.prototype.upload=function(mod){var gl=this.gl,P=[],N=[],Cc=[],Mm=[],circ=[],self=this,pr=this.P;
  mod.m.f.forEach(function(f){var p=f.p;if(p.length<3)return;
   var a=p[0],b=p[1],c=p[2],u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
