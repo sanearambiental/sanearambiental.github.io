@@ -73,7 +73,7 @@ ol.steps{padding-left:22px;margin:0;display:grid;gap:8px}
 .hx .btns{display:flex;flex-wrap:wrap;gap:10px}
 .kicker{display:inline-block;background:#4e8a1c;color:#fff;font-size:13px;font-weight:700;padding:5px 12px;border-radius:99px;letter-spacing:.3px}
 .btn.ghost{background:rgba(255,255,255,.12);color:#fff;border:2px solid #fff}
-.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:-28px;position:relative}
+.trust{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-top:-28px;position:relative}
 .trust div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
 .trust b{display:block;color:var(--accent);margin-bottom:4px}.trust span{font-size:14px;color:var(--muted)}
 .sim{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
