@@ -94,7 +94,7 @@ function eta(Qp,ctx){
   R.push(["Calha Parshall","Garganta",ps[0]+"\"","vazão até "+fmt(ps[1],1)+" L/s","ABNT NBR ISO 9826 (medição em calha Parshall)",Qls<=ps[1]]);
   R.push(["Calha Parshall","Mistura rápida (coagulação e correção de pH)","no ressalto da calha","dosagem de coagulante e de alcalinizante","NBR 12216",true]);
   U.push({label:"Caixa de areia e calha Parshall",kind:"parshall",n:1,d:Lt,wz:bca+.4,h:hc,lca:Lca,bca:bca,pw:ps[0],nod:true,info:"Caixa de areia ("+f2(Lca)+" × "+f2(bca)+" m) seguida de calha Parshall de "+ps[0]+"\" que mede a vazão ("+fmt(Qls,1)+" L/s). No ressalto da calha são dosados o coagulante e o produto de correção de pH: a calha faz a mistura rápida, sem tanque de coagulação. pH da água bruta: "+f2(ph)+"."});
-  etapas.push("caixa de areia e calha Parshall (coagulação e correção de pH)");}
+  etapas.push("caixa de areia e calha Parshall (coagulação e correção de pH"+(temMn?", oxidante":"")+")");}
  else{R.push(["Correção de pH","Dosagem","na tubulação de entrada da torre","bomba dosadora","Critério de projeto SANEAR",true]);
   etapas.push("correção de pH na tubulação (bomba dosadora)");}
  /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
@@ -107,7 +107,10 @@ function eta(Qp,ctx){
   U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:hT,out:hto,sp:esp,sq:true,info:"Torre com "+f2(hT)+" m de altura. Bandeja coletora a "+f2(hto)+" m, acima dos filtros: a água cai por gravidade nos filtros. 5 bandejas de "+f2(ta)+" × "+f2(ta)+" m espaçadas "+f2(esp)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
   etapas.push("torre de aeração");}
  /* Pré-oxidação do manganês: o ar não oxida o manganês, precisa de oxidante (cloro ou permanganato) */
- if(temMn){var po=pickH(Qh/3,aera?HF:1.2);/* entre a torre e os filtros: nível acima dos filtros, para seguir por gravidade */big=big||po.big;var tpo=po.V/Qh*60;
+ if(temMn&&rio){/* água de rio: o oxidante é dosado direto na calha Parshall, sem tanque de pré-oxidação */
+  R.push(["Pré-oxidação","Dosagem de oxidante (manganês)","na calha Parshall","sem tanque de contato","Critério de projeto SANEAR",true]);
+  U.forEach(function(u){if(u.kind==="parshall")u.info+=" Com manganês ("+f2(mn)+" mg/L), o oxidante também é dosado na calha.";});}
+ if(temMn&&!rio){var po=pick(Qh/3,Math.min(4.0,aera?HF:1.2),{dmin:1.0});/* altura total do tanque de pré-oxidação: no máximo 4,50 m *//* entre a torre e os filtros: nível acima dos filtros, para seguir por gravidade */big=big||po.big;var tpo=po.V/Qh*60;
   R.push(["Pré-oxidação","Tempo de contato com oxidante",fmt(tpo,0)+" min","≥ 20 min","Critério de projeto adotado (manganês)",tpo>=20-1e-6]);
   U.push({label:"Pré-oxidação (manganês)",n:po.n,d:po.d,h:po.hu+.5,hu:po.hu,v:po.v,info:"Contato com oxidante por "+fmt(tpo,0)+" min para precipitar o manganês ("+f2(mn)+" mg/L) antes dos filtros."});
   etapas.push("pré-oxidação do manganês");}
@@ -130,7 +133,7 @@ function eta(Qp,ctx){
  U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros ascendentes em PRFV: a água entra pelo fundo de cada filtro (entrada individual a partir do barrilete) e sai pelo alto. Taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
  etapas.push("filtração");
  R.push(["Desinfecção","Local da cloração","no reservatório de água tratada","tempo de contato ≥ 30 min","Portaria GM/MS nº 888/2021",true]);
- if(rio&&temMn){/* na água de rio, a pré-oxidação vem antes da coagulação */var iu=U.findIndex(function(u){return/Pré-oxidação/.test(u.label)});U.unshift(U.splice(iu,1)[0]);var ie=etapas.indexOf("pré-oxidação do manganês");etapas.unshift(etapas.splice(ie,1)[0]);}
+ 
  var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
  var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantador de alta taxa antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
  var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". A desinfecção (cloração) é feita no reservatório de água tratada. "+por;
@@ -150,9 +153,9 @@ function eta(Qp,ctx){
    else{var hu=Math.min(HMAX,hreq-.5);
     if(/Flocul/.test(u.label)){/* altura fixada pela gravidade (máximo 6,00 m de altura total): escolhe diâmetro e quantidade que mantêm 20 a 40 min */hu=Math.min(hu,5.5);var f=null;for(var nn=1;nn<=MAXN&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}if(!f){/* vazão muito pequena: até o menor tanque passa de 40 min */var d0=DS[0];f={n:1,d:d0,hu:hu,v:A(d0)*hu,V:A(d0)*hu};}
      u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
-    else if(/Pré-oxid/.test(u.label)){var f=pickH(Qh/3,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
+    else if(/Pré-oxid/.test(u.label)){/* no máximo 4,50 m de altura: se precisar ficar mais alto, vai para uma base de concreto */hu=Math.min(hu,4.0);var f=pick(Qh/3,hu,{dmin:1.0});u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
     else{u.hu=hu;u.v=A(u.d)*hu;}
-    u.h=Math.round((u.hu+.5)*100)/100;u.info+=" Altura de "+f2(u.h)+" m: 0,50 m acima da unidade seguinte, para a água seguir por gravidade.";}}
+    u.h=Math.round((u.hu+.5)*100)/100;if(u.h<hreq-1e-6){u.b=Math.round((hreq-u.h)*100)/100;u.info+=" Tanque de "+f2(u.h)+" m sobre base de concreto de "+f2(u.b)+" m, para a água seguir por gravidade.";}else u.info+=" Altura de "+f2(u.h)+" m: 0,50 m acima da unidade seguinte, para a água seguir por gravidade.";}}
   R.push(["Hidráulica","Escoamento entre as unidades","por gravidade","sem bombeamento intermediário","Critério de projeto SANEAR",true]);}
  return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
 
