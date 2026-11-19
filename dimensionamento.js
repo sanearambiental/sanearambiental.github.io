@@ -72,14 +72,14 @@ function ete(Qmed,ctx){
 function eta(Qp,ctx){
  var Hop=Math.max(4,Math.min(24,ctx.Hop)),Qh=Qp/Hop,U=[],R=[],big=false;
  var rio=ctx.orig==="rio",fe=ctx.fe,mn=ctx.mn,ph=ctx.ph,tu=ctx.tu;
- var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio&&tu>10,aera=!rio||temFe||temMn;
+ var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio,aera=!rio;/* água de rio: tratamento convencional; torre só em poço *//* torre de aeração só em água de poço */
  var etapas=[];
  /* Correção de pH (e coagulação, na água de rio) */
  var cp=pick(Qh/6,1.2,{dmin:1.0});big=big||cp.big;var tph=cp.V/Qh*60;
  R.push(["Correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
  R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
- U.push({label:rio?"Correção de pH e coagulação":"Correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:(rio?"Dosagem de coagulante e ajuste de pH":"Ajuste do pH")+" com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
- etapas.push(rio?"correção de pH e coagulação":"correção de pH");
+ U.push({label:rio?"Coagulação e correção de pH":"Correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:(rio?"Dosagem de coagulante e ajuste de pH":"Ajuste do pH")+" com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
+ etapas.push(rio?"coagulação e correção de pH":"correção de pH");
  /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
  if(aera){var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
   R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
@@ -106,7 +106,7 @@ function eta(Qp,ctx){
  R.push(["Filtros","Número de filtros",String(fl.n),"≥ 2","NBR 12216",fl.n>=2]);
  if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(temMn)R.push(["Água bruta","Manganês",f2(mn)+" mg/L","≤ 0,1 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
- if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT",ciclo?"acima de 10 uT: ciclo completo":"até 10 uT: filtração direta","NBR 12216",true]);
+ if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT","≤ 5 uT na água tratada (tratamento convencional)","Portaria GM/MS nº 888/2021",true]);
  U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
  etapas.push("filtração");
  var ds=pick(Qh*.5,1.2,{dmin:1.0});big=big||ds.big;var tc=ds.V/Qh*60;
@@ -116,8 +116,9 @@ function eta(Qp,ctx){
  U.push({label:"Desinfecção",n:ds.n,d:ds.d,h:ds.hu+.5,hu:ds.hu,v:ds.v,info:"Contato com cloro por "+fmt(tc,0)+" min (Portaria GM/MS nº 888/2021)."});
  U.push({label:"Reservatório de água tratada",n:rs.n,d:rs.d,h:rs.hu+.5,hu:rs.hu,v:rs.v,info:"Reservação de "+f2(rs.V)+" m³, 1/3 do volume do dia de maior consumo (NBR 12217)."});
  etapas.push("desinfecção");
- var nome=ciclo?"ETA de ciclo completo em PRFV":rio?"ETA de filtração direta em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
- var por=rio?(ciclo?"Água de rio ou igarapé com turbidez de "+fmt(tu,0)+" uT: precisa de floculação e decantação antes dos filtros.":"Água de rio ou igarapé com baixa turbidez: filtração direta, sem decantador."):(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
+ if(rio&&temMn){/* na água de rio, a pré-oxidação vem antes da coagulação */var iu=U.findIndex(function(u){return/Pré-oxidação/.test(u.label)});U.unshift(U.splice(iu,1)[0]);var ie=etapas.indexOf("pré-oxidação do manganês");etapas.unshift(etapas.splice(ie,1)[0]);}
+ var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
+ var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantação antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
  var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+", com reservatório de água tratada. "+por;
  return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216, NBR 12217 e Portaria GM/MS nº 888/2021"};}
 
