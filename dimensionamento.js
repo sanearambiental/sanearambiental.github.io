@@ -26,7 +26,11 @@ function pickH(V,hb,o){o=o||{};var dmin=o.dmin||1.0,nmin=o.nmin||1;
  var d=DS[DS.length-1],n=Math.ceil(V/(A(d)*HMAX));return{n:n,d:d,hu:HMAX,v:A(d)*HMAX,A:n*A(d),V:n*A(d)*HMAX,big:true};}
 
 /* ---------- ETE ---------- */
-function ete(Qmed,ctx){
+/* ETE: se a estação passar de 15 tanques no total (UASB, FAS, decantador e desinfecção), refaz com a forma de Ø 4,00 m disponível */
+function ete(Qmed,ctx){var r=ete0(Qmed,ctx,false);if(!r.U)return r;var tot=0;r.U.forEach(function(u){if(u.v)tot+=u.n;});return tot>15?ete0(Qmed,ctx,true):r;}
+function ete0(Qmed,ctx,f4){
+ function pickE(V,hu,o){o=o||{};var D0=DS;if(f4)DS=DS.concat([4]);var r=pick(V,hu,o);DS=D0;
+  if(r.n>15){var d=4,h=hu,n=Math.max(o.nmin||1,Math.ceil(Math.max(V/(A(d)*h),(o.amin||0)/A(d))-1e-9));r={n:n,d:d,hu:h,v:A(d)*h,A:n*A(d),V:n*A(d)*h};}return r;}
  var K1=ctx.K1,K2=ctx.K2,T=ctx.T,S0=ctx.S0,Qmax=Qmed*K1*K2,qh=Qmed/24,qx=Qmax/24,U=[],R=[],big=false;
  var carga0=Qmed*S0/1000;
  if(ctx.biodig){U.push({label:"Biodigestor SB 1200",n:1,d:1.2,h:1.5,nod:true,info:"Biodigestor em PRFV da SANEAR para famílias de até 5 pessoas."});
@@ -35,7 +39,7 @@ function ete(Qmed,ctx){
  /* Reator UASB — NBR 12209:2011, 6.4 */
  var tdh=T>25?6:T>=22?7:T>=18?8:10,tl=T>25?"esgoto acima de 25 °C":T>=22?"esgoto entre 22 e 25 °C":T>=18?"esgoto entre 18 e 21 °C":"esgoto abaixo de 18 °C";
  var hU=4.5;/* altura útil padrão SANEAR (altura total 5,00 m) */
- var ua=pick(qh*tdh,hU,{amin:Math.max(qh/0.7,qx/1.2)});big=big||ua.big;
+ var ua=pickE(qh*tdh,hU,{amin:Math.max(qh/0.7,qx/1.2)});big=big||ua.big;
  var tdhU=ua.V/qh,vm=qh/ua.A,vx=qx/ua.A;
  R.push(["Reator UASB","Tempo de detenção (vazão média)",f2(tdhU)+" h","≥ "+tdh+" h ("+tl+")","NBR 12209:2011, 6.4.3",tdhU>=tdh-1e-6]);
  R.push(["Reator UASB","Velocidade ascensional (vazão média)",f2(vm)+" m/h","≤ 0,70 m/h","NBR 12209:2011, 6.4",vm<=.7+1e-6]);
@@ -45,7 +49,7 @@ function ete(Qmed,ctx){
  /* Filtro aerado submerso (biofiltro aerado submerso) */
  var hF=4.0;/* altura útil padrão SANEAR (altura total 4,50 m) */
  var CVF=1.5;/* carga orgânica volumétrica adotada no volume útil (planilha SANEAR; NBR 12209 permite até 1,8) */
- var fs=pick(Math.max(qh*1.2,carga1/CVF),hF,{dmin:1.0});big=big||fs.big;
+ var fs=pickE(Math.max(qh*1.2,carga1/CVF),hF,{dmin:1.0});big=big||fs.big;
  var cov=carga1/fs.V,tdhF=fs.V/qh,qar=35*carga1/24;
  R.push(["Filtro aerado (FAS)","Carga orgânica volumétrica (volume útil)",f2(cov)+" kg DBO/m³·dia","≤ 1,50 kg DBO/m³·dia (NBR: até 1,80)","NBR 12209:2011, 6.5.3.4 / planilha SANEAR",cov<=CVF+1e-6]);
  var tos=carga1*1000/(fs.V*.3*500);
@@ -54,14 +58,14 @@ function ete(Qmed,ctx){
  R.push(["Filtro aerado (FAS)","Vazão de ar do soprador",fmt(qar,1)+" Nm³/h","35 Nm³ de ar por kg de DBO (mínimo 30)","NBR 12209:2011, 6.5.3.5",true]);
  /* Decantador secundário */
  var hD=2.0;/* planilha SANEAR: volume útil na parte cilíndrica de 2,00 m (altura útil 3,60 m com o fundo cônico; altura total 4,00 m) */
- var dc=pick(qh*1.5,hD,{amin:Math.max(Qmed/23,Qmax/45),dmin:1.0});big=big||dc.big;
+ var dc=pickE(qh*1.5,hD,{amin:Math.max(Qmed/23,Qmax/45),dmin:1.0});big=big||dc.big;
  var tm=Qmed/dc.A,tx=Qmax/dc.A,tdhD=dc.V/qh;
  R.push(["Decantador (DS)","Taxa de escoamento superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 23 m³/m²·dia","Planilha de dimensionamento SANEAR",tm<=23+1e-6]);
  R.push(["Decantador (DS)","Taxa de aplicação superficial (vazão máxima)",f2(tx)+" m³/m²·dia","≤ 45 m³/m²·dia","Planilha de dimensionamento SANEAR",tx<=45+1e-6]);
  R.push(["Decantador (DS)","Tempo de detenção (vazão média)",f2(tdhD)+" h","≥ 1,50 h","Critério de projeto adotado",tdhD>=1.5-1e-6]);
  /* Desinfecção */
  var hT=1.5;/* altura útil padrão SANEAR (altura total 2,00 m) */
- var td=pick(qh*.5,hT,{dmin:1.0});big=big||td.big;
+ var td=pickE(qh*.5,hT,{dmin:1.0});big=big||td.big;
  var tc=td.V/qh*60;
  R.push(["Desinfecção (TD)","Tempo de contato com cloro (vazão média)",fmt(tc,0)+" min","≥ 30 min","NBR 12209:2011",tc>=30-1e-6]);
  /* Filtros de biogás: carvão ativado, troca mensal, forma Ø0,60 × 1,00 m (método do memorial SANEAR) */
