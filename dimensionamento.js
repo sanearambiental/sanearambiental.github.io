@@ -141,7 +141,7 @@ function eta(Qp,ctx){
   for(var i=fi-1;i>=0;i--){var u=U[i],nx=U[i+1],top=(nx.b||0)+nx.h,hreq=Math.round((top+.5)*100)/100;/* cada unidade 0,50 m mais alta que a seguinte */
    if(u.kind==="parshall"){u.b=Math.round((top+.3)*100)/100;u.info+=" Fica numa plataforma de concreto a "+f2(u.b)+" m de altura, acima dos tanques: dali a água segue por gravidade.";}
    else{var hu=Math.min(HMAX,hreq-.5);
-    if(/Flocul/.test(u.label)){/* altura fixada pela gravidade: escolhe diâmetro e quantidade que mantêm 20 a 40 min */var f=null;for(var nn=1;nn<=6&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}f=f||pickH(Qh*.5,hu);
+    if(/Flocul/.test(u.label)){/* altura fixada pela gravidade (máximo 6,00 m de altura total): escolhe diâmetro e quantidade que mantêm 20 a 40 min */hu=Math.min(hu,5.5);var f=null;for(var nn=1;nn<=MAXN&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}if(!f){var nn=Math.ceil(Qh*.5/(A(DS[DS.length-1])*hu));f={n:nn,d:DS[DS.length-1],hu:hu,v:A(DS[DS.length-1])*hu,V:nn*A(DS[DS.length-1])*hu};}
      u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
     else if(/Pré-oxid/.test(u.label)){var f=pickH(Qh/3,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
     else{u.hu=hu;u.v=A(u.d)*hu;}
