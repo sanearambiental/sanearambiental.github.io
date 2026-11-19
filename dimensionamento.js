@@ -117,14 +117,11 @@ function eta(Qp,ctx){
  if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT","≤ 5 uT na água tratada (tratamento convencional)","Portaria GM/MS nº 888/2021",true]);
  U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
  etapas.push("filtração");
- var ds=pickH(Qh*.5,1.2);big=big||ds.big;var tc=ds.V/Qh*60;
- R.push(["Desinfecção","Tempo de contato com cloro",fmt(tc,0)+" min","≥ 30 min","Portaria GM/MS nº 888/2021",tc>=30-1e-6]);
- U.push({label:"Desinfecção",n:ds.n,d:ds.d,h:ds.hu+.5,hu:ds.hu,v:ds.v,info:"Contato com cloro por "+fmt(tc,0)+" min (Portaria GM/MS nº 888/2021)."});
- etapas.push("desinfecção");
+ R.push(["Desinfecção","Local da cloração","no reservatório de água tratada","tempo de contato ≥ 30 min","Portaria GM/MS nº 888/2021",true]);
  if(rio&&temMn){/* na água de rio, a pré-oxidação vem antes da coagulação */var iu=U.findIndex(function(u){return/Pré-oxidação/.test(u.label)});U.unshift(U.splice(iu,1)[0]);var ie=etapas.indexOf("pré-oxidação do manganês");etapas.unshift(etapas.splice(ie,1)[0]);}
  var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
  var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantador de alta taxa antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
- var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". "+por;
+ var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". A desinfecção (cloração) é feita no reservatório de água tratada. "+por;
  return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
 
 /* ---------- interface ---------- */
