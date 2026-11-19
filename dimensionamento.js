@@ -17,6 +17,14 @@ function pick(V,hu,o){o=o||{};var dmin=o.dmin||1.5,amin=o.amin||0,nmin=o.nmin||1
   if(n*A(d)*h>=V-1e-9&&n*A(d)>=amin-1e-9)return{n:n,d:d,hu:h,v:A(d)*h,A:n*A(d),V:n*A(d)*h};}
  var d=3,h=typeof hu==="function"?hu(3):hu,n=Math.ceil(Math.max(V/(A(d)*h),amin/A(d),nmin));return{n:n,d:d,hu:h,v:A(d)*h,A:n*A(d),V:n*A(d)*h,big:true};}
 
+/* ETA: tanques podem chegar a 8,00 m de altura total (7,50 m úteis + 0,50 m de borda).
+   Para cada quantidade, tenta primeiro a altura padrão; se não couber, usa o maior diâmetro com a altura necessária até 7,50 m; só então acrescenta tanques. */
+var HMAX=7.5;
+function pickH(V,hb,o){o=o||{};var dmin=o.dmin||1.0,nmin=o.nmin||1;
+ for(var n=nmin;n<=MAXN;n++){for(var i=0;i<DS.length;i++){var d=DS[i];if(d<dmin)continue;if(n*A(d)*hb>=V-1e-9)return{n:n,d:d,hu:hb,v:A(d)*hb,A:n*A(d),V:n*A(d)*hb};}
+  var dM=DS[DS.length-1],h=Math.ceil(V/(n*A(dM))*10)/10;if(h<=HMAX)return{n:n,d:dM,hu:Math.max(hb,h),v:A(dM)*Math.max(hb,h),A:n*A(dM),V:n*A(dM)*Math.max(hb,h)};}
+ var d=DS[DS.length-1],n=Math.ceil(V/(A(d)*HMAX));return{n:n,d:d,hu:HMAX,v:A(d)*HMAX,A:n*A(d),V:n*A(d)*HMAX,big:true};}
+
 /* ---------- ETE ---------- */
 function ete(Qmed,ctx){
  var K1=ctx.K1,K2=ctx.K2,T=ctx.T,S0=ctx.S0,Qmax=Qmed*K1*K2,qh=Qmed/24,qx=Qmax/24,U=[],R=[],big=false;
@@ -75,7 +83,7 @@ function eta(Qp,ctx){
  var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio,aera=!rio;/* água de rio: tratamento convencional; torre só em poço *//* torre de aeração só em água de poço */
  var etapas=[];
  /* Correção de pH (e coagulação, na água de rio) */
- var cp=pick(Qh/6,1.2,{dmin:1.0});big=big||cp.big;var tph=cp.V/Qh*60;
+ var cp=pickH(Qh/6,1.2);big=big||cp.big;var tph=cp.V/Qh*60;
  R.push(["Correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
  R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
  U.push({label:rio?"Coagulação e correção de pH":"Correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:(rio?"Dosagem de coagulante e ajuste de pH":"Ajuste do pH")+" com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
@@ -87,18 +95,18 @@ function eta(Qp,ctx){
   U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:Math.max(3.2,ta+2.6),sq:true,info:"5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
   etapas.push("torre de aeração");}
  /* Pré-oxidação do manganês: o ar não oxida o manganês, precisa de oxidante (cloro ou permanganato) */
- if(temMn){var po=pick(Qh/3,1.2,{dmin:1.0});big=big||po.big;var tpo=po.V/Qh*60;
+ if(temMn){var po=pickH(Qh/3,1.2);big=big||po.big;var tpo=po.V/Qh*60;
   R.push(["Pré-oxidação","Tempo de contato com oxidante",fmt(tpo,0)+" min","≥ 20 min","Critério de projeto adotado (manganês)",tpo>=20-1e-6]);
   U.push({label:"Pré-oxidação (manganês)",n:po.n,d:po.d,h:po.hu+.5,hu:po.hu,v:po.v,info:"Contato com oxidante por "+fmt(tpo,0)+" min para precipitar o manganês ("+f2(mn)+" mg/L) antes dos filtros."});
   etapas.push("pré-oxidação do manganês");}
  /* Floculação e decantação: água de rio com turbidez acima de 10 uT */
- if(ciclo){var fc=pick(Qh*.5,2.5,{dmin:1.0});big=big||fc.big;var tfc=fc.V/Qh*60;
+ if(ciclo){var fc=pickH(Qh*.5,2.5);big=big||fc.big;var tfc=fc.V/Qh*60;
   R.push(["Floculação","Tempo de floculação",fmt(tfc,0)+" min","20 a 40 min","NBR 12216",tfc>=20-1e-6]);
   U.push({label:"Floculador",n:fc.n,d:fc.d,h:fc.hu+.5,hu:fc.hu,v:fc.v,info:"Floculação hidráulica com "+fmt(tfc,0)+" min de detenção (NBR 12216)."});
-  var dc=pick(0,3.0,{amin:Qh*24/25,nmin:1});big=big||dc.big;var tdc=Qh*24/dc.A;
-  R.push(["Decantação","Taxa de aplicação superficial",f2(tdc)+" m³/m²·dia","≤ 25 m³/m²·dia","NBR 12216 (ETA de pequeno porte)",tdc<=25+1e-6]);
-  U.push({label:"Decantador",n:dc.n,d:dc.d,h:dc.hu+.5,hu:dc.hu,v:dc.v,info:"Decantação com taxa de "+f2(tdc)+" m³/m²·dia (NBR 12216). Turbidez da água bruta: "+fmt(tu,0)+" uT."});
-  etapas.push("floculação","decantação");}
+  var dc=pick(0,4.0,{amin:Qh*24/150,nmin:1});big=big||dc.big;var tdc=Qh*24/dc.A;/* decantador de alta taxa (módulos lamelares) */
+  R.push(["Decantação","Taxa de aplicação na área do decantador",f2(tdc)+" m³/m²·dia","≤ 150 m³/m²·dia","Critério de projeto adotado (decantador de alta taxa com módulos lamelares, NBR 12216)",tdc<=150+1e-6]);
+  U.push({label:"Decantador de alta taxa",n:dc.n,d:dc.d,h:dc.hu+.5,hu:dc.hu,v:dc.v,info:"Decantador com módulos lamelares e taxa de "+f2(tdc)+" m³/m²·dia. Turbidez da água bruta: "+fmt(tu,0)+" uT."});
+  etapas.push("floculação","decantação de alta taxa");}
  /* Filtros: taxa menor quando há muito ferro ou manganês */
  var txmax=(fe>5||temMn)?120:180;
  var fl=pick(0,2.5,{amin:Qh*24/txmax,nmin:2});big=big||fl.big;var tf=Qh*24/fl.A;
@@ -109,18 +117,15 @@ function eta(Qp,ctx){
  if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT","≤ 5 uT na água tratada (tratamento convencional)","Portaria GM/MS nº 888/2021",true]);
  U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
  etapas.push("filtração");
- var ds=pick(Qh*.5,1.2,{dmin:1.0});big=big||ds.big;var tc=ds.V/Qh*60;
+ var ds=pickH(Qh*.5,1.2);big=big||ds.big;var tc=ds.V/Qh*60;
  R.push(["Desinfecção","Tempo de contato com cloro",fmt(tc,0)+" min","≥ 30 min","Portaria GM/MS nº 888/2021",tc>=30-1e-6]);
- var rs=pick(Qp/3,function(d){return d<=2.5?4:5},{dmin:2});big=big||rs.big;
- R.push(["Reservatório","Volume de reservação",f2(rs.V)+" m³","≥ "+f2(Qp/3)+" m³ (1/3 do dia de maior consumo)","NBR 12217",rs.V>=Qp/3-1e-6]);
  U.push({label:"Desinfecção",n:ds.n,d:ds.d,h:ds.hu+.5,hu:ds.hu,v:ds.v,info:"Contato com cloro por "+fmt(tc,0)+" min (Portaria GM/MS nº 888/2021)."});
- U.push({label:"Reservatório de água tratada",n:rs.n,d:rs.d,h:rs.hu+.5,hu:rs.hu,v:rs.v,info:"Reservação de "+f2(rs.V)+" m³, 1/3 do volume do dia de maior consumo (NBR 12217)."});
  etapas.push("desinfecção");
  if(rio&&temMn){/* na água de rio, a pré-oxidação vem antes da coagulação */var iu=U.findIndex(function(u){return/Pré-oxidação/.test(u.label)});U.unshift(U.splice(iu,1)[0]);var ie=etapas.indexOf("pré-oxidação do manganês");etapas.unshift(etapas.splice(ie,1)[0]);}
  var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
- var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantação antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
- var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+", com reservatório de água tratada. "+por;
- return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216, NBR 12217 e Portaria GM/MS nº 888/2021"};}
+ var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantador de alta taxa antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
+ var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". "+por;
+ return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
 
 /* ---------- interface ---------- */
 var TIPOS={esgoto:[["Residência / condomínio residencial",160,"Pessoas atendidas"],["Escritório / comércio",50,"Pessoas atendidas"],["Escola (externato)",50,"Alunos e funcionários"],["Indústria (por funcionário)",70,"Funcionários"],["Hotel / pousada",120,"Hóspedes e funcionários"],["Hospital (por leito)",250,"Leitos"],["Comunidade rural / ribeirinha",100,"Moradores"]],
