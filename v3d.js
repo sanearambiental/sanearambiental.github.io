@@ -231,18 +231,24 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
   if(p.un.kind==="prelim"||p.un.kind==="elev"){/* recalque da elevatória: PVC marrom pelo chão, sobe pela parede do reator e entra pelo topo */
    var A=[p.cx,p.z],B=near(q,A),rq=rad(q),dx=A[0]-B[0],dz=A[1]-B[1],dl=Math.hypot(dx,dz)||1,WP=[B[0]+dx/dl*(rq+.12),B[1]+dz/dl*(rq+.12)],T=[B[0]+dx/dl*(rq*.55),B[1]+dz/dl*(rq*.55)];
    var pts=ortho([A[0],A[1]],WP,-.35);var top=q.un.h+.18;pts.push([WP[0],top,WP[1]],[T[0],top,T[1]],[T[0],q.un.h,T[1]]);m.run(pts,AF,-1,RA);continue;}
-  if(eta&&/Filtro/.test(q.un.label)&&p.un.kind!=="prelim"){/* filtros ascendentes, como no projeto da ETA SANEAR: barrilete no piso com uma entrada individual pelo fundo de cada filtro; saída pelo alto de cada filtro */
-   var R=q.w/2,yb=.32,yo=q.un.h-.25,zH=q.z-q.depth/2-.45,A=near(p,[q.cx,zH]),rp=rad(p),sx=q.cx>=A[0]?1:-1,tw=p.un.kind==="torre",E=[A[0]+sx*(tw?p.w*.6:rp-.05),A[1]],O=tw?E:[A[0]+sx*(rp+.2),A[1]],y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):HB(p)+p.un.h-.5;
-   var PB=C.beige,xs=q.cs.map(function(c){return c[0]}),x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs);
-   if(tw)m.run([[A[0],y1+.02,A[1]],[A[0],yb,A[1]],[A[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);else m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],yb,O[1]],[O[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);
+  if(eta&&/Filtro|Decant/.test(q.un.label)&&p.un.kind!=="prelim"){/* unidades ascendentes (decantadores e filtros), como no projeto da ETA SANEAR: barrilete no piso com entrada individual pelo fundo de cada tanque, e coletor no alto de cada tanque; a vazão se divide por igual */
+   var R=q.w/2,yb=.32,yo=HB(q)+q.un.h-.25,zH=q.z-q.depth/2-.45,A=near(p,[q.cx,zH]),rp=rad(p),sx=q.cx>=A[0]?1:-1,tw=p.un.kind==="torre",E=[A[0]+sx*(tw?p.w*.6:rp-.05),A[1]],O=tw?E:[A[0]+sx*(rp+.2),A[1]],y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):HB(p)+p.un.h-.5;
+   var PB=C.beige,xs=q.cs.map(function(c){return c[0]}),x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs),S;
+   if(p.outEnd){S=p.outEnd;var pts=[S,[S[0],yb,S[2]]].concat(ortho([S[0],S[2]],[S[0],zH],yb).slice(1));m.run(pts,PB,-1,RE);m.run([[Math.min(S[0],x0),yb,zH],[Math.max(S[0],x1),yb,zH]],PB,-1,RE);}
+   else if(tw)m.run([[A[0],y1+.02,A[1]],[A[0],yb,A[1]],[A[0],yb,zH],[sx>0?x1:x0,yb,zH]],PB,-1,RE);
+   else{m.run([[E[0],y1,E[1]],[O[0],y1,O[1]],[O[0],yb,O[1]],[O[0],yb,zH]],PB,-1,RE);m.run([[Math.min(O[0],x0),yb,zH],[Math.max(O[0],x1),yb,zH]],PB,-1,RE);}
    q.cs.forEach(function(c){var front=c[1]<=q.z+.01;
     if(front||q.rows===1)m.run([[c[0],yb,zH],[c[0],yb,c[1]-R+.04]],PB,-1,RE*.85);
     else{var gx=c[0]+(c[0]<q.x+q.wid-q.w?1:-1)*(R+q.g/2);m.run([[gx,yb,zH],[gx,yb,c[1]],[c[0]+(gx>c[0]?1:-1)*(R-.04),yb,c[1]]],PB,-1,RE*.85);}});
+   var nxt=lk[i+2],so=nxt?(nxt.cx>=q.cx?1:-1):sx,ends=[];
    var rowsZ={};q.cs.forEach(function(c){var k=c[1].toFixed(2);(rowsZ[k]=rowsZ[k]||[]).push(c);});
    Object.keys(rowsZ).forEach(function(k){var cs=rowsZ[k],cz=+k,s=(q.rows===1||cz>q.z+.01)?1:-1;var zc=cz+s*(R+.35);
     cs.forEach(function(c){m.run([[c[0],yo,c[1]+s*(R-.04)],[c[0],yo,zc]],PB,-1,RE*.85);});
-    var xa=Math.min.apply(0,cs.map(function(c){return c[0]})),xb=Math.max.apply(0,cs.map(function(c){return c[0]})),xe=(sx>0?xb:xa)+sx*(R+.4);
-    m.run([[sx>0?xa:xb,yo,zc],[xe,yo,zc],[xe,-.05,zc]],PB,-1,RE);});
+    var xa=Math.min.apply(0,cs.map(function(c){return c[0]})),xb=Math.max.apply(0,cs.map(function(c){return c[0]})),xe=(so>0?xb:xa)+so*(R+.4);
+    m.run([[so>0?xa:xb,yo,zc],[xe,yo,zc]],PB,-1,RE);ends.push([xe,yo,zc]);});
+   if(/Decant/.test(q.un.label)&&nxt){/* coletores dos decantadores juntam num tubo só, que desce para o barrilete dos filtros */
+    if(ends.length>1)m.run([ends[0],ends[ends.length-1]],PB,-1,RE);q.outEnd=ends[0];}
+   else ends.forEach(function(e){m.run([e,[e[0],-.05,e[2]]],PB,-1,RE);});
    continue;}
   var A=near(p,[q.cx,q.z]),B=near(q,A),ux=B[0]-A[0],uz=B[1]-A[1],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;
   var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):HB(p)+p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:HB(q)+q.un.h-.25;

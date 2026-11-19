@@ -138,15 +138,14 @@ function eta(Qp,ctx){
  var fi=-1;U.forEach(function(u,i){if(/Filtro/.test(u.label))fi=i;});
  if(rio&&fi>0){var need=U[fi].h+.5;/* nível mínimo de saída da unidade anterior aos filtros (filtros ascendentes) */
   function setRow(k,val,ok){R.forEach(function(r){if(r[0]===k){r[2]=val;r[5]=ok;}});}
-  for(var i=fi-1;i>=0;i--){var u=U[i],hreq=Math.ceil((need+.25)*20)/20;
-   if(u.kind==="parshall"){u.b=Math.ceil((need+.1)*20)/20;/* fundo do canal acima do nível de entrada do floculador */u.info+=" Fica numa plataforma de concreto a "+f2(u.b)+" m de altura, acima dos tanques: dali a água segue por gravidade.";}
-   else if(u.h<hreq){var hu=Math.min(HMAX,hreq-.5);
-    if(/Flocul/.test(u.label)){/* com a altura fixada pela gravidade, escolhe o diâmetro que mantém 20 a 40 min */var f=null;for(var nn=1;nn<=4&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}f=f||pickH(Qh*.5,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
+  for(var i=fi-1;i>=0;i--){var u=U[i],nx=U[i+1],top=(nx.b||0)+nx.h,hreq=Math.round((top+.5)*100)/100;/* cada unidade 0,50 m mais alta que a seguinte */
+   if(u.kind==="parshall"){u.b=Math.round((top+.3)*100)/100;u.info+=" Fica numa plataforma de concreto a "+f2(u.b)+" m de altura, acima dos tanques: dali a água segue por gravidade.";}
+   else{var hu=Math.min(HMAX,hreq-.5);
+    if(/Flocul/.test(u.label)){/* altura fixada pela gravidade: escolhe diâmetro e quantidade que mantêm 20 a 40 min */var f=null;for(var nn=1;nn<=6&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}f=f||pickH(Qh*.5,hu);
+     u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
     else if(/Pré-oxid/.test(u.label)){var f=pickH(Qh/3,hu);u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
     else{u.hu=hu;u.v=A(u.d)*hu;}
-    u.h=Math.round((u.hu+.5)*100)/100;if(u.h<hreq)u.b=Math.ceil((hreq-u.h)*20)/20;
-    u.info+=" Altura de "+f2(u.h)+" m para a água seguir por gravidade.";}
-   need=(u.b||0)+u.h+.1;}
+    u.h=Math.round((u.hu+.5)*100)/100;u.info+=" Altura de "+f2(u.h)+" m: 0,50 m acima da unidade seguinte, para a água seguir por gravidade.";}}
   R.push(["Hidráulica","Escoamento entre as unidades","por gravidade","sem bombeamento intermediário","Critério de projeto SANEAR",true]);}
  return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
 
