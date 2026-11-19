@@ -109,7 +109,7 @@ function eta(Qp,ctx){
   etapas.push("floculação","decantação de alta taxa");}
  /* Filtros: taxa menor quando há muito ferro ou manganês */
  var txmax=(fe>5||temMn)?120:180;
- var fl=pick(0,2.5,{amin:Qh*24/txmax,nmin:2});big=big||fl.big;var tf=Qh*24/fl.A;
+ var fl=pick(0,3.5,{amin:Qh*24/txmax,nmin:2});/* filtros com 4,00 m de altura total (3,50 m úteis) */big=big||fl.big;var tf=Qh*24/fl.A;
  R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ "+txmax+" m³/m²·dia",txmax<180?"Critério de projeto (ferro/manganês altos)":"NBR 12216 (filtro rápido)",tf<=txmax+1e-6]);
  R.push(["Filtros","Número de filtros",String(fl.n),"≥ 2","NBR 12216",fl.n>=2]);
  if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
