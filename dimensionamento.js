@@ -88,7 +88,7 @@ function eta(Qp,ctx){
  R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(rio){/* caixa de areia com medidor Parshall: a calha Parshall é a mistura rápida, onde se dosa o coagulante e se corrige o pH (sem tanque de coagulação) */
   var Qls=Qh/3.6,PS=[[1,5.4,.9],[2,13.2,1.0],[3,53.8,1.2],[6,110.4,1.6],[9,251.9,1.8],[12,455.6,2.4]],ps=PS[PS.length-1];for(var k=0;k<PS.length;k++){if(Qls<=PS[k][1]){ps=PS[k];break;}}
-  var vh=.30,bca=Math.max(.4,Math.ceil(Qh/3600/vh/.6*20)/20),hca=Math.max(.25,Math.ceil(Qh/3600/vh/bca*20)/20),vr=Qh/3600/(bca*hca),Lca=Math.max(1.5,Math.ceil(hca*vr/.02*1.5*2)/2),Lt=Math.round((Lca+ps[2]+.4)*10)/10,hc=Math.round((hca+.35)*100)/100;
+  var vh=.30,Qs=Qh/3600,bca=Math.max(.4,Math.ceil(Qs/vh/.6*20)/20),hca,vr,Lca;/* caixa de areia curta (até 3,00 m): se precisar, alarga o canal */for(var it=0;it<60;it++){hca=Math.max(.25,Math.ceil(Qs/vh/bca*20)/20);vr=Qs/(bca*hca);Lca=Math.max(1.5,Math.ceil(hca*vr/.02*1.5*2)/2);if(Lca<=3)break;bca=Math.round((bca+.05)*100)/100;}var Lt=Math.round((Lca+ps[2]+.4)*10)/10,hc=Math.round((hca+.35)*100)/100;
   R.push(["Caixa de areia","Velocidade horizontal",f2(vr)+" m/s","≤ 0,30 m/s","Critério de projeto adotado (desarenador)",vr<=.30+1e-6]);
   R.push(["Caixa de areia","Comprimento",f2(Lca)+" m","remoção de areia ≥ 0,2 mm","Critério de projeto adotado",true]);
   R.push(["Calha Parshall","Garganta",ps[0]+"\"","vazão até "+fmt(ps[1],1)+" L/s","ABNT NBR ISO 9826 (medição em calha Parshall)",Qls<=ps[1]]);
@@ -164,6 +164,7 @@ function calc(){
   $("p_dboh").textContent=MODE==="pes"?"Em branco: "+fmt(MODE==="pes"&&q>0?Math.round(54/(q*.8)*1000):350,0)+" mg/L (54 g de DBO por pessoa por dia).":"Em branco: 350 mg/L (esgoto doméstico típico).";
   var biodig=MODE==="pes"?(P>0&&P<=5&&t[0].indexOf("Residência")===0):(Qmed>0&&Qmed<=.6);
   if(Qmed<=0){return empty();}
+  if(MODE==="pes"?P>LIM:Qmed>LIM*(q>0?q:160)*.8/1000)return acima();
   res=ete(Qmed,{K1:num("p_k1",1.2),K2:num("p_k2",1.5),T:num("p_t",26),S0:S0,biodig:biodig});
   $("r_med_l").textContent="Vazão média";$("r_pk_l").textContent="Vazão máxima";
   $("r_med").textContent=fmt(res.Qmed,1)+" m³/dia";$("r_med2").textContent=f2(res.Qmed/86.4)+" L/s · "+f2(res.Qmed/24)+" m³/h";
@@ -172,6 +173,7 @@ function calc(){
  }else{
   var K1a=num("p_k1a",1.2),Qp=MODE==="pes"?P*q*K1a/1000:toM3d(vin,vu);
   if(Qp<=0){return empty();}
+  if(MODE==="pes"?P>LIM:Qp>LIM*(q>0?q:200)*K1a/1000)return acima();
   var orig=$("s_orig").value,rio=orig==="rio",fe=num("s_fe",NaN),mn=num("s_mn",NaN),phv=num("s_ph",NaN),tu=num("s_tu",NaN);
   var dfe=rio?0.3:2,dmn=0,dph=rio?6.5:5.5,dtu=rio?40:5;
   $("s_qh").textContent="Em branco: ferro "+f2(dfe).replace(",00","")+" mg/L, manganês "+dmn+" mg/L, pH "+String(dph).replace(".",",")+" e turbidez "+dtu+" uT, valores típicos de "+(rio?"rio ou igarapé":"poço")+" na região.";
@@ -207,6 +209,8 @@ function calc(){
  $("r_wa").href="https://wa.me/5591989138154?text="+encodeURIComponent(m);last.msg=m;last.sist=(L==="esgoto"?"ETE (esgoto)":"ETA (água)");try{dispatchEvent(new CustomEvent("sanear:sim"))}catch(_){}
  last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
 }
+var LIM=15000;
+function acima(){empty();$("r_sol").textContent="Acima de 15 mil pessoas";$("r_txt").innerHTML='O simulador atende estações de até 15 mil pessoas. Para estações maiores, entre em contato conosco: <a href="https://wa.me/5591989138154?text='+encodeURIComponent("Olá! Preciso de uma estação para mais de 15 mil pessoas.")+'" target="_blank" rel="noopener">WhatsApp (91) 98913-8154</a>.';}
 function empty(){last=null;$("r_med").textContent="–";$("r_pk").textContent="–";$("r_med2").textContent="";$("r_pk2").textContent="";$("r_sol").textContent="–";$("r_txt").textContent="Informe a vazão ou o número de pessoas.";$("r_nb").textContent="";$("r_tab").innerHTML="";$("r_ver").innerHTML="";$("r_ok").className="okbox";$("r_ok").textContent="";}
 function setMode(m){MODE=m;document.querySelectorAll(".seg button").forEach(function(b){var on=b.dataset.m===m;b.classList.toggle("on",on);b.setAttribute("aria-checked",on)});$("g_vaz").hidden=m!=="vaz";$("g_pes").hidden=m!=="pes";calc();}
 function setL(l){L=l;document.querySelectorAll("#simulador .tabs .tab").forEach(function(x){x.classList.toggle("on",x.dataset.l===l)});
