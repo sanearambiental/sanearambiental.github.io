@@ -79,7 +79,7 @@ function ete(Qmed,ctx){
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
  var Hop=Math.max(4,Math.min(24,ctx.Hop)),Qh=Qp/Hop,U=[],R=[],big=false;
- var HF=4.0;/* altura total dos filtros */
+ var HF=3.8;/* altura total dos filtros */
  var rio=ctx.orig==="rio",fe=ctx.fe,mn=ctx.mn,ph=ctx.ph,tu=ctx.tu;
  var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio,aera=!rio;/* água de rio: tratamento convencional; torre só em poço *//* torre de aeração só em água de poço */
  var etapas=[];
@@ -134,6 +134,13 @@ function eta(Qp,ctx){
  var nome=rio?"ETA convencional em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
  var por=rio?"Água de rio ou igarapé: tratamento convencional, com coagulação, floculação e decantador de alta taxa antes dos filtros (turbidez da água bruta: "+fmt(tu,0)+" uT).":(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
  var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+". A desinfecção (cloração) é feita no reservatório de água tratada. "+por;
+ /* poço: a bandeja coletora (última bandeja) fica 1,00 m acima do topo de todos os tanques depois do aerador */
+ var ti=-1;U.forEach(function(u,i){if(u.kind==="torre")ti=i;});
+ if(ti>=0){var tw=U[ti],mx=0;for(var k=ti+1;k<U.length;k++)mx=Math.max(mx,(U[k].b||0)+U[k].h);
+  var out=Math.round((mx+1)*100)/100,hT2=Math.round((out+5*tw.sp+.4)*100)/100;
+  tw.info=tw.info.replace("Torre com "+f2(tw.h)+" m de altura. Bandeja coletora a "+f2(tw.out)+" m, acima dos filtros","Torre com "+f2(hT2)+" m de altura. Bandeja coletora a "+f2(out)+" m, 1,00 m acima dos tanques seguintes");
+  tw.out=out;tw.h=hT2;
+  R.forEach(function(r){if(r[0]==="Torre de aeração"&&/Bandeja coletora/.test(r[1])){r[1]="Bandeja coletora acima do topo dos tanques seguintes";r[2]=f2(out)+" m";r[3]="≥ "+f2(mx+1)+" m (1,00 m acima de "+f2(mx)+" m)";r[5]=true;}});}
  /* tudo por gravidade: só a caixa de areia com calha Parshall fica numa base alta; os tanques ficam no chão e mudam de altura para a água descer de uma unidade para a outra */
  var fi=-1;U.forEach(function(u,i){if(/Filtro/.test(u.label))fi=i;});
  if(rio&&fi>0){var need=U[fi].h+.5;/* nível mínimo de saída da unidade anterior aos filtros (filtros ascendentes) */
