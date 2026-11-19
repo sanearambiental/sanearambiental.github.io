@@ -177,7 +177,59 @@ function eta(){var m=new M(),u=[];
  return{m:m,u:u,title:"ETA em PRFV",span:12,yaw:-.6};}
 
 /* modelo gerado pelo simulador: units=[{n,d,h,kind,label}] */
-function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.cream:C.green;
+/* ETE em linhas de tratamento: a vazão se divide em linhas iguais e, em cada linha, os tanques seguem na mesma direção (UASB → FAS → decantador → desinfecção); filtro de biogás ao lado do seu reator UASB */
+function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.05,RA=.03;
+ function SP(w){return Math.max(.4,Math.round(w*.25*20)/20);}
+ var US=spec.units,F=function(re){for(var i=0;i<US.length;i++)if(re.test(US[i].label))return{un:US[i],id:i};return null;};
+ var gU=F(/UASB/),gG=F(/biogás/),gF=F(/FAS/),gD=F(/Decantador/),gT=F(/desinfec/i),gP=F(/preliminar/),gE=F(/elevatória/),gC=F(/Casa/);
+ var grp=[gU,gF,gD,gT].filter(Boolean),L=Math.max(1,Math.min.apply(0,[gF,gD,gT].filter(Boolean).map(function(g){return g.un.n}).concat([gU.un.n])));
+ function share(n,k){return Math.floor(n/L)+(k<n%L?1:0);}
+ var Dmax=Math.max.apply(0,grp.map(function(g){return g.un.d})),P=Dmax+Math.max(1.1,SP(Dmax)+.2),x=0,GX=Math.max(1.0,SP(Dmax)+.1);
+ grp.forEach(function(g){g.mx=0;for(var k=0;k<L;k++)g.mx=Math.max(g.mx,share(g.un.n,k));g.sp=SP(g.un.d);g.x0=x;g.w=g.mx*g.un.d+(g.mx-1)*g.sp;x+=g.w+GX;});
+ var Wt=x-GX,x0s=-Wt/2,zs=-(L-1)*P/2;grp.forEach(function(g){g.x0+=x0s;g.cs=[];for(var k=0;k<L;k++){var n=share(g.un.n,k),row=[];for(var j=0;j<n;j++)row.push([g.x0+g.un.d/2+j*(g.un.d+g.sp),zs+k*P]);g.cs.push(row);}});
+ var zmin=zs-Dmax/2-.6,zmax=zs+(L-1)*P+Dmax/2+.6,xmin=x0s-3.4,xmax=x0s+Wt+.8;
+ if(gC){gC.cx=x0s+Wt+.9+gC.un.d/2;gC.cz=zs+(L-1)*P/2;xmax=gC.cx+gC.un.d/2+.4;}
+ var cx0=(xmin+xmax)/2,cz0=(zmin+zmax)/2;function X(v){return v-cx0}function Zz(v){return v-cz0}
+ var W=xmax-xmin,D=zmax-zmin,FW=W+3.2,FD=D+3.4;
+ m.box(0,-.05,0,320,.05,320,C.grass,-2);m.box(0,-.02,0,FW,.04,FD,C.gravel,-2);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);
+ /* tanques */
+ grp.forEach(function(g){var un=g.un,R=un.d/2,first=null;g.cs.forEach(function(row){row.forEach(function(c){var cx=X(c[0]),cz=Zz(c[1]);if(!first)first=[cx,cz];m.stank(cx,cz,R,un.h,col,g.id,un.h>2.6?Math.PI:undefined);});});
+  var mid=X(g.x0+g.w/2);u.push({id:g.id,n:un.label,t:un.info||"",at:[mid,un.h+1.15,Zz(zs)],g:{x:first[0],z:first[1],y0:0,r:R,h:un.h,n:un.n}});});
+ /* filtros de biogás: ao lado (+z) de cada reator UASB; com menos filtros que reatores, os primeiros reatores recebem um filtro e os outros ligam no mais próximo */
+ if(gG&&gU){var all=[];gU.cs.forEach(function(row){row.forEach(function(c){all.push(c)})});var RU=gU.un.d/2,rg=gG.un.d/2,gpos=[];
+  var gap=gU.sp;for(var i=0;i<gG.un.n&&i<all.length;i++){var c=all[i];gpos.push([c[0]+RU+gap/2,c[1]+RU*.55]);}
+  gpos.forEach(function(p){var gx=X(p[0]),gz=Zz(p[1]);if(!m.tpl("gas",gx,.15,gz,0,gG.un.d/2/.32,gG.un.h/1.05,gG.un.d/2/.32,col,gG.id))m.vtank(gx,gz,rg,gG.un.h,col,gG.id);else m.circ.push([gx,gz,rg]);});
+  u.push({id:gG.id,n:gG.un.label,t:gG.un.info||"",at:[X(gpos[0][0]),gG.un.h+1.0,Zz(gpos[0][1])],g:null});
+  all.forEach(function(c){var best=gpos[0],bd=1e9;gpos.forEach(function(p){var d=Math.hypot(p[0]-c[0],p[1]-c[1]);if(d<bd){bd=d;best=p;}});
+   var cx=X(c[0]),cz=Zz(c[1]),yt=gU.un.h,bx=X(best[0]),bz=Zz(best[1]);
+   m.run([[cx+RU*.35,yt,cz+RU*.3],[cx+RU*.35,yt+.15,cz+RU*.3],[bx,yt+.15,cz+RU*.3],[bx,yt+.15,bz],[bx,gG.un.h+.15,bz]],ESG,-1,.025);});}
+ /* tratamento preliminar e elevatória, antes das linhas */
+ var xe=x0s-1.3,ze=zs+(L-1)*P/2;
+ if(gP){var pw=gP.un.d,pd=pw*.6,px=X(xe-.4-pd/2-(gE?gE.un.d/2:0)),pz=Zz(ze);m.box(px,0,pz,pd+.3,.2,pw+.3,C.conc,gP.id);for(var g=0;g<3;g++){var tw=(pw-.1)/3;m.box(px,.2,pz-pw/2+.05+tw*(g+.5),pd-.1,.025,tw-.04,C.metal,gP.id);}
+  u.push({id:gP.id,n:gP.un.label,t:gP.un.info||"",at:[px,1.2,pz],g:null});}
+ if(gE){var lw=gE.un.d,ex=X(xe),ez=Zz(ze);m.box(ex,0,ez,lw+.3,.2,lw+.3,C.conc,gE.id);for(var g=0;g<2;g++){var tw=(lw-.1)/2;m.box(ex-lw/2+.05+tw*(g+.5),.2,ez,tw-.04,.025,lw-.1,C.metal,gE.id);}
+  u.push({id:gE.id,n:gE.un.label,t:gE.un.info||"",at:[ex,1.2,ez],g:null});
+  /* recalque: barrilete enterrado ao longo das linhas, sobe em cada linha e distribui por igual no topo de cada UASB */
+  var hx=X(gU.x0-.8),RU2=gU.un.d/2,ytop=gU.un.h+.3;m.run([[ex,-.35,ez],[hx,-.35,ez]],AF,-1,RA*1.3);
+  var zA=Zz(zs),zB=Zz(zs+(L-1)*P);if(L>1)m.run([[hx,-.35,zA],[hx,-.35,zB]],AF,-1,RA*1.3);
+  gU.cs.forEach(function(row,k){var zl=Zz(zs+k*P),xl=X(row[row.length-1][0]);m.run([[hx,-.35,zl],[hx,ytop,zl],[xl,ytop,zl]],AF,-1,RA);row.forEach(function(c){m.run([[X(c[0]),ytop,zl],[X(c[0]),ytop,zl-RU2*.45],[X(c[0]),gU.un.h,zl-RU2*.45]],AF,-1,RA*.8);});});}
+ /* entre grupos, em cada linha: coletor da saída de todos os tanques e distribuição por igual na entrada dos tanques seguintes (lados alternados) */
+ for(var gi=0;gi<grp.length-1;gi++){var a=grp[gi],b=grp[gi+1],s=gi%2?1:-1;
+  for(var k=0;k<L;k++){var ra=a.cs[k],rb=b.cs[k];if(!ra.length||!rb.length)continue;var zl=zs+k*P,Rm=Math.max(a.un.d,b.un.d)/2,zc=Zz(zl+s*(Rm+.4)),y1=a.un.h-.5,y2=b.un.h-.25,xm=X(b.x0-GX/2);
+   if(y2>y1-.05)y2=y1-.1;
+   ra.forEach(function(c){m.run([[X(c[0]),y1,Zz(c[1]+s*(a.un.d/2-.03))],[X(c[0]),y1,zc]],ESG,-1,RE*.85);});
+   rb.forEach(function(c){m.run([[X(c[0]),y2,zc],[X(c[0]),y2,Zz(c[1]+s*(b.un.d/2-.03))]],ESG,-1,RE*.85);});
+   m.run([[X(ra[0][0]),y1,zc],[xm,y1,zc],[xm,y2,zc],[X(rb[rb.length-1][0]),y2,zc]],ESG,-1,RE);}}
+ /* saída do efluente tratado em cada linha */
+ var gl=grp[grp.length-1];gl.cs.forEach(function(row){if(!row.length)return;var c=row[row.length-1],R=gl.un.d/2;m.run([[X(c[0]+R-.05),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),-.05,Zz(c[1])]],ESG,-1,RE);});
+ /* casa de máquinas: ar para os FAS e cloro para a desinfecção */
+ if(gC){var hx2=X(gC.cx),hz=Zz(gC.cz);if(!m.tpl("casa",hx2,.15,hz,0,gC.un.d/1.65,gC.un.h/2.65,gC.un.d*.8/1.65,col,gC.id))m.house(hx2,hz,gC.un.d,gC.un.h,gC.un.d*.8,gC.id);
+  u.push({id:gC.id,n:gC.un.label,t:gC.un.info||"",at:[hx2,gC.un.h+1.0,hz],g:null});
+  function feed(g,r,yy){if(!g)return;var R=g.un.d/2;g.cs.forEach(function(row,k){var zl=zs+k*P,zf=Zz(zl-(Math.max(Dmax/2,R)+.9));row.forEach(function(c){var cx=X(c[0]);
+   m.run([[hx2-gC.un.d/2,yy,hz],[hx2-gC.un.d/2-.3,yy,hz],[hx2-gC.un.d/2-.3,yy,zf],[cx,yy,zf],[cx,g.un.h+.15,zf],[cx,g.un.h+.15,Zz(c[1]-R*.55)],[cx,g.un.h,Zz(c[1]-R*.55)]],AF,-1,r);});});}
+  feed(gF,RA,.18);feed(gT,.018,.15);}
+ return{m:m,u:u,title:spec.title||"",span:Math.max(7,Math.max(FW,FD)*1.1+1),yaw:-.55,area:{w:W+1.4,d:D+1.4}};}
+function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.some(function(un){return/UASB/.test(un.label)}))return eteLines(spec);var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.cream:C.green;
  /* afastamento padrão entre paredes dos tanques, tirado dos projetos SANEAR: 0,40 m nos tanques até Ø 1,50 m e cerca de 1/4 do diâmetro nos maiores (0,70 m no UASB Ø 2,00 m; 0,90 m nos de Ø 3,50 m) */
  function SP(w){return Math.max(.4,Math.round(w*.25*20)/20);}
  var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
