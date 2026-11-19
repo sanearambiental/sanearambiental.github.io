@@ -56,13 +56,12 @@ function ete0(Qmed,ctx,f4){
  R.push(["Filtro aerado (FAS)","Carga orgânica superficial no meio suporte",f2(tos)+" g DBO/m²·dia","< 15 g DBO/m²·dia","NBR 12209:2011, 6.5.3.4",tos<15]);
  R.push(["Filtro aerado (FAS)","Tempo de detenção (vazão média)",f2(tdhF)+" h","≥ 1,20 h","Planilha de dimensionamento SANEAR",tdhF>=1.2-1e-6]);
  R.push(["Filtro aerado (FAS)","Vazão de ar do soprador",fmt(qar,1)+" Nm³/h","35 Nm³ de ar por kg de DBO (mínimo 30)","NBR 12209:2011, 6.5.3.5",true]);
- /* Decantador secundário */
+ /* Decantador secundário de alta taxa (módulos lamelares/tubulares): taxas usuais de projeto, 60 m³/m²·dia na média e 120 na máxima */
  var hD=2.0;/* planilha SANEAR: volume útil na parte cilíndrica de 2,00 m (altura útil 3,60 m com o fundo cônico; altura total 4,00 m) */
- var dc=pickE(qh*1.5,hD,{amin:Math.max(Qmed/23,Qmax/45),dmin:1.0});big=big||dc.big;
+ var dc=pickE(0,hD,{amin:Math.max(Qmed/60,Qmax/120),dmin:1.0});big=big||dc.big;
  var tm=Qmed/dc.A,tx=Qmax/dc.A,tdhD=dc.V/qh;
- R.push(["Decantador (DS)","Taxa de escoamento superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 23 m³/m²·dia","Planilha de dimensionamento SANEAR",tm<=23+1e-6]);
- R.push(["Decantador (DS)","Taxa de aplicação superficial (vazão máxima)",f2(tx)+" m³/m²·dia","≤ 45 m³/m²·dia","Planilha de dimensionamento SANEAR",tx<=45+1e-6]);
- R.push(["Decantador (DS)","Tempo de detenção (vazão média)",f2(tdhD)+" h","≥ 1,50 h","Critério de projeto adotado",tdhD>=1.5-1e-6]);
+ R.push(["Decantador de alta taxa (DS)","Taxa de escoamento superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 60 m³/m²·dia","Critério de projeto (decantador lamelar)",tm<=60+1e-6]);
+ R.push(["Decantador de alta taxa (DS)","Taxa de aplicação superficial (vazão máxima)",f2(tx)+" m³/m²·dia","≤ 120 m³/m²·dia","Critério de projeto (decantador lamelar)",tx<=120+1e-6]);
  /* Desinfecção */
  var hT=1.5;/* altura útil padrão SANEAR (altura total 2,00 m) */
  var td=pickE(qh*.5,hT,{dmin:1.0});big=big||td.big;
@@ -80,11 +79,11 @@ function ete0(Qmed,ctx,f4){
  U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de "+fmt(eU*100,0)+"% da DBO."});
  U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). "+(ua.d>3?"Um filtro para cada reator UASB. Consumo":"Quantidade para troca do carvão a cada 30 dias: consumo")+" estimado de "+f2(mca)+" kg/dia."});
  U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
- U.push({label:"Decantador secundário (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});
+ U.push({label:"Decantador de alta taxa (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Decantador secundário com módulos lamelares. Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});
  U.push({label:"Tanque de desinfecção (TD)",n:td.n,d:td.d,h:td.hu+.5,hu:td.hu,v:td.v,info:"Contato com cloro por "+fmt(tc,0)+" min na vazão média (mínimo de 30 min)."});
  U.push({label:"Casa de máquinas",kind:"casa",n:1,d:2.2,h:2.1,info:"Quadro de comando, soprador de ar do FAS e dosagem de cloro.",nodim:true});
  var small=Qmed<=12&&carga0<=3.8;
- return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,big:big,sol:"ETE em PRFV: UASB + FAS + decantador + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
+ return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,big:big,sol:"ETE em PRFV: UASB + FAS + decantador de alta taxa + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
 
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
