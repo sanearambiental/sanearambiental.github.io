@@ -39,19 +39,25 @@ function ete(Qmed,ctx){
  var tdhU=ua.V/qh,vm=qh/ua.A,vx=qx/ua.A;
  R.push(["Reator UASB","Tempo de detenção (vazão média)",f2(tdhU)+" h","≥ "+tdh+" h ("+tl+")","NBR 12209:2011, 6.4.3",tdhU>=tdh-1e-6]);
  R.push(["Reator UASB","Velocidade ascensional (vazão média)",f2(vm)+" m/h","≤ 0,70 m/h","NBR 12209:2011, 6.4",vm<=.7+1e-6]);
- R.push(["Reator UASB","Velocidade ascensional (vazão máxima)",f2(vx)+" m/h","≤ 1,20 m/h","NBR 12209:2011, 6.4",vx<=1.2+1e-6]);
+ R.push(["Reator UASB","Velocidade ascensional (vazão máxima)",f2(vx)+" m/h","≤ 1,20 m/h","NBR 12209:2011, 6.4.11",vx<=1.2+1e-6]);
  R.push(["Reator UASB","Profundidade útil",f2(ua.hu)+" m","4,00 a 6,00 m","NBR 12209:2011, 6.4.5",ua.hu>=4&&ua.hu<=6]);
- var S1=S0*(1-.65),carga1=Qmed*S1/1000;
+ var eU=1-.7*Math.pow(tdhU,-.5);/* remoção de DBO no UASB pelo TDH (planilha SANEAR) */var S1=S0*(1-eU),carga1=Qmed*S1/1000;
  /* Filtro aerado submerso (biofiltro aerado submerso) */
  var hF=4.0;/* altura útil padrão SANEAR (altura total 4,50 m) */
- var fs=pick(qh*1.2,hF,{dmin:1.0});big=big||fs.big;
- var cov=carga1/fs.V,tdhF=fs.V/qh;
+ var CVF=1.5;/* carga orgânica volumétrica adotada no volume útil (planilha SANEAR; NBR 12209 permite até 1,8) */
+ var fs=pick(Math.max(qh*1.2,carga1/CVF),hF,{dmin:1.0});big=big||fs.big;
+ var cov=carga1/fs.V,tdhF=fs.V/qh,qar=35*carga1/24;
+ R.push(["Filtro aerado (FAS)","Carga orgânica volumétrica (volume útil)",f2(cov)+" kg DBO/m³·dia","≤ 1,50 kg DBO/m³·dia (NBR: até 1,80)","NBR 12209:2011, 6.5.3.4 / planilha SANEAR",cov<=CVF+1e-6]);
+ var tos=carga1*1000/(fs.V*.3*500);
+ R.push(["Filtro aerado (FAS)","Carga orgânica superficial no meio suporte",f2(tos)+" g DBO/m²·dia","< 15 g DBO/m²·dia","NBR 12209:2011, 6.5.3.4",tos<15]);
  R.push(["Filtro aerado (FAS)","Tempo de detenção (vazão média)",f2(tdhF)+" h","≥ 1,20 h","Planilha de dimensionamento SANEAR",tdhF>=1.2-1e-6]);
+ R.push(["Filtro aerado (FAS)","Vazão de ar do soprador",fmt(qar,1)+" Nm³/h","35 Nm³ de ar por kg de DBO (mínimo 30)","NBR 12209:2011, 6.5.3.5",true]);
  /* Decantador secundário */
  var hD=2.0;/* planilha SANEAR: volume útil na parte cilíndrica de 2,00 m (altura útil 3,60 m com o fundo cônico; altura total 4,00 m) */
- var dc=pick(qh*1.5,hD,{amin:Qmed/36,dmin:1.0});big=big||dc.big;
+ var dc=pick(qh*1.5,hD,{amin:Math.max(Qmed/23,Qmax/45),dmin:1.0});big=big||dc.big;
  var tm=Qmed/dc.A,tx=Qmax/dc.A,tdhD=dc.V/qh;
- R.push(["Decantador (DS)","Taxa de aplicação superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 36 m³/m²·dia","Planilha de dimensionamento SANEAR",tm<=36+1e-6]);
+ R.push(["Decantador (DS)","Taxa de escoamento superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 23 m³/m²·dia","Planilha de dimensionamento SANEAR",tm<=23+1e-6]);
+ R.push(["Decantador (DS)","Taxa de aplicação superficial (vazão máxima)",f2(tx)+" m³/m²·dia","≤ 45 m³/m²·dia","Planilha de dimensionamento SANEAR",tx<=45+1e-6]);
  R.push(["Decantador (DS)","Tempo de detenção (vazão média)",f2(tdhD)+" h","≥ 1,50 h","Critério de projeto adotado",tdhD>=1.5-1e-6]);
  /* Desinfecção */
  var hT=1.5;/* altura útil padrão SANEAR (altura total 2,00 m) */
@@ -60,16 +66,16 @@ function ete(Qmed,ctx){
  R.push(["Desinfecção (TD)","Tempo de contato com cloro (vazão média)",fmt(tc,0)+" min","≥ 30 min","NBR 12209:2011",tc>=30-1e-6]);
  /* Filtros de biogás: carvão ativado, troca mensal, forma Ø0,60 × 1,00 m (método do memorial SANEAR) */
  var mca=Qmed/451.2*1.564,kgf=Math.PI*0.09*0.6*500,nbg=Math.max(1,Math.ceil(mca*30/kgf));
- var S2=S1*(1-.80),ef=(1-S2/S0)*100;
+ var S2=S1*(1-.85),ef=(1-S2/S0)*100;/* FAS remove 85% (planilha SANEAR) */
  R.push(["Efluente tratado","DBO estimada na saída",fmt(S2,0)+" mg/L ("+fmt(ef,0)+"% de remoção)","≤ 120 mg/L","CONAMA 430/2011, art. 21",S2<=120]);
  U.push({label:"Tratamento preliminar",kind:"prelim",n:1,d:Math.min(3.5,1.6+Qmed/400),h:.8,info:"Grade, caixa de areia e medidor de vazão, em concreto. Retêm sólidos grosseiros e areia (NBR 12209).",nodim:true});
  /* Estação elevatória: poço com 2 bombas submersíveis (1 reserva), ciclo mínimo de 10 min (NBR 12208) */
  var qb=Qmax/1440,vel=Math.max(.5,qb*10/4),le=Math.max(1.3,Math.ceil(Math.sqrt(vel/1.2)*10)/10);
  R.push(["Estação elevatória","Volume útil do poço (ciclo de 10 min)",f2(vel)+" m³","≥ "+f2(qb*10/4)+" m³","NBR 12208:2020",true]);
  U.push({label:"Estação elevatória",kind:"elev",n:1,d:le,h:.8,info:"Poço em concreto de "+f2(le)+" × "+f2(le)+" m com duas bombas submersíveis (uma reserva), volume útil de "+f2(vel)+" m³ para ciclo de 10 min (NBR 12208). Recalca o esgoto até o reator UASB.",nodim:true});
- U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de 65% da DBO."});
+ U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de "+fmt(eU*100,0)+"% da DBO."});
  U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). Quantidade para troca do carvão a cada 30 dias: consumo estimado de "+f2(mca)+" kg/dia."});
- U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV, com ar do soprador. Carga orgânica de "+f2(cov)+" kgDBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h."});
+ U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
  U.push({label:"Decantador secundário (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});
  U.push({label:"Tanque de desinfecção (TD)",n:td.n,d:td.d,h:td.hu+.5,hu:td.hu,v:td.v,info:"Contato com cloro por "+fmt(tc,0)+" min na vazão média (mínimo de 30 min)."});
  U.push({label:"Casa de máquinas",kind:"casa",n:1,d:2.2,h:2.1,info:"Quadro de comando, soprador de ar do FAS e dosagem de cloro.",nodim:true});
@@ -170,8 +176,8 @@ function calc(){
  var t=TIPOS[L][$("s_tipo").value],P=Math.max(0,num("s_pop",0)),q=Math.max(0,num("s_q",0)),vin=Math.max(0,num("s_v",0)),vu=$("s_vu").value,res,lines=[];
  if(L==="esgoto"){
   var Qmed=MODE==="pes"?P*q*.8/1000:toM3d(vin,vu);
-  var dboUser=num("p_dbo",NaN),S0=isFinite(dboUser)&&dboUser>0?dboUser:(MODE==="pes"&&q>0?Math.round(54/(q*.8)*1000):350);
-  $("p_dboh").textContent=MODE==="pes"?"Em branco: "+fmt(MODE==="pes"&&q>0?Math.round(54/(q*.8)*1000):350,0)+" mg/L (54 g de DBO por pessoa por dia).":"Em branco: 350 mg/L (esgoto doméstico típico).";
+  var dboUser=num("p_dbo",NaN),S0=isFinite(dboUser)&&dboUser>0?dboUser:(MODE==="pes"&&q>0?Math.round(45/(q*.8)*1000):350);
+  $("p_dboh").textContent=MODE==="pes"?"Em branco: "+fmt(MODE==="pes"&&q>0?Math.round(45/(q*.8)*1000):350,0)+" mg/L (45 g de DBO por pessoa por dia).":"Em branco: 350 mg/L (esgoto doméstico típico).";
   var biodig=MODE==="pes"?(P>0&&P<=5&&t[0].indexOf("Residência")===0):(Qmed>0&&Qmed<=.6);
   if(Qmed<=0){return empty();}
   if(MODE==="pes"?P>LIM:Qmed>LIM*(q>0?q:160)*.8/1000)return acima();
