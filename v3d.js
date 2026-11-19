@@ -186,7 +186,7 @@ function simModel(spec){window.__simSpec=spec;var m=new M(),u=[],eta=spec.tipo==
    var A=[p.cx,p.z],B=near(q,A),rq=rad(q),dx=A[0]-B[0],dz=A[1]-B[1],dl=Math.hypot(dx,dz)||1,WP=[B[0]+dx/dl*(rq+.12),B[1]+dz/dl*(rq+.12)],T=[B[0]+dx/dl*(rq*.55),B[1]+dz/dl*(rq*.55)];
    var pts=ortho([A[0],A[1]],WP,-.35);var top=q.un.h+.18;pts.push([WP[0],top,WP[1]],[T[0],top,T[1]],[T[0],q.un.h,T[1]]);m.run(pts,AF,-1,RA);continue;}
   var A=near(p,[q.cx,q.z]),B=near(q,A),ux=B[0]-A[0],uz=B[1]-A[1],L=Math.hypot(ux,uz)||1;ux/=L;uz/=L;
-  var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?p.un.h*.4:p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:q.un.h-.25;
+  var rp=rad(p),rq=rad(q),y1=p.un.kind==="torre"?(p.un.out||p.un.h*.4):p.un.h-.5,y2=q.un.kind==="torre"?q.un.h-.1:q.un.h-.25;
   var E=[A[0]+ux*(rp-.05),A[1]+uz*(rp-.05)],O=[A[0]+ux*(rp+.18),A[1]+uz*(rp+.18)],N=[B[0]-ux*(rq-.05),B[1]-uz*(rq-.05)];
   if(y2<y1-.05&&q.un.kind!=="torre"){/* sai pela lateral no alto, desce no vão entre os tanques e entra pela lateral no alto do próximo */
    var g=(rp+.18<L-rq-.1)?Math.min(.5,(L-rp-rq)/2):(L-rp-rq)/2,G=[A[0]+ux*(rp+g),A[1]+uz*(rp+g)];

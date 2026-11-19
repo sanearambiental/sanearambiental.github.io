@@ -79,23 +79,28 @@ function ete(Qmed,ctx){
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
  var Hop=Math.max(4,Math.min(24,ctx.Hop)),Qh=Qp/Hop,U=[],R=[],big=false;
+ var HF=4.0;/* altura total dos filtros */
  var rio=ctx.orig==="rio",fe=ctx.fe,mn=ctx.mn,ph=ctx.ph,tu=ctx.tu;
  var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio,aera=!rio;/* água de rio: tratamento convencional; torre só em poço *//* torre de aeração só em água de poço */
  var etapas=[];
- /* Correção de pH (e coagulação, na água de rio) */
- var cp=pickH(Qh/6,1.2);big=big||cp.big;var tph=cp.V/Qh*60;
- R.push(["Correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
+ /* Poço: correção de pH dosada por bomba dosadora direto na tubulação que vai para a torre (sem tanque).
+    Rio: tanque de coagulação e correção de pH. */
  R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
- U.push({label:rio?"Coagulação e correção de pH":"Correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:(rio?"Dosagem de coagulante e ajuste de pH":"Ajuste do pH")+" com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
- etapas.push(rio?"coagulação e correção de pH":"correção de pH");
+ if(rio){var cp=pickH(Qh/6,1.2);big=big||cp.big;var tph=cp.V/Qh*60;
+  R.push(["Coagulação e correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
+  U.push({label:"Coagulação e correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:"Dosagem de coagulante e ajuste de pH com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
+  etapas.push("coagulação e correção de pH");}
+ else{R.push(["Correção de pH","Dosagem","na tubulação de entrada da torre","bomba dosadora","Critério de projeto SANEAR",true]);
+  etapas.push("correção de pH na tubulação (bomba dosadora)");}
  /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
  if(aera){var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
   R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
   R.push(["Torre de aeração","Número de bandejas","5","≥ 3","Literatura técnica",true]);
-  U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:Math.max(3.2,ta+2.6),sq:true,info:"5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
+  var hto=HF+.5,hT=Math.ceil((hto+Math.max(2,ta+1.2))*10)/10;/* saída da torre 0,50 m acima do topo dos filtros: a água segue por gravidade */
+  U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:hT,out:hto,sq:true,info:"Torre com "+f2(hT)+" m de altura e saída a "+f2(hto)+" m, acima dos filtros: a água segue por gravidade. 5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
   etapas.push("torre de aeração");}
  /* Pré-oxidação do manganês: o ar não oxida o manganês, precisa de oxidante (cloro ou permanganato) */
- if(temMn){var po=pickH(Qh/3,1.2);big=big||po.big;var tpo=po.V/Qh*60;
+ if(temMn){var po=pickH(Qh/3,aera?HF:1.2);/* entre a torre e os filtros: nível acima dos filtros, para seguir por gravidade */big=big||po.big;var tpo=po.V/Qh*60;
   R.push(["Pré-oxidação","Tempo de contato com oxidante",fmt(tpo,0)+" min","≥ 20 min","Critério de projeto adotado (manganês)",tpo>=20-1e-6]);
   U.push({label:"Pré-oxidação (manganês)",n:po.n,d:po.d,h:po.hu+.5,hu:po.hu,v:po.v,info:"Contato com oxidante por "+fmt(tpo,0)+" min para precipitar o manganês ("+f2(mn)+" mg/L) antes dos filtros."});
   etapas.push("pré-oxidação do manganês");}
@@ -109,7 +114,7 @@ function eta(Qp,ctx){
   etapas.push("floculação","decantação de alta taxa");}
  /* Filtros: taxa menor quando há muito ferro ou manganês */
  var txmax=(fe>5||temMn)?120:180;
- var fl=pick(0,3.5,{amin:Qh*24/txmax,nmin:2});/* filtros com 4,00 m de altura total (3,50 m úteis) */big=big||fl.big;var tf=Qh*24/fl.A;
+ var fl=pick(0,HF-.5,{amin:Qh*24/txmax,nmin:2});/* filtros com 4,00 m de altura total (3,50 m úteis) */big=big||fl.big;var tf=Qh*24/fl.A;
  R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ "+txmax+" m³/m²·dia",txmax<180?"Critério de projeto (ferro/manganês altos)":"NBR 12216 (filtro rápido)",tf<=txmax+1e-6]);
  R.push(["Filtros","Número de filtros",String(fl.n),"≥ 2","NBR 12216",fl.n>=2]);
  if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
