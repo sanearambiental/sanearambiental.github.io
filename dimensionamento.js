@@ -71,24 +71,55 @@ function ete(Qmed,ctx){
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
  var Hop=Math.max(4,Math.min(24,ctx.Hop)),Qh=Qp/Hop,U=[],R=[],big=false;
- var ph=pick(Qh/6,1.2,{dmin:1.0});big=big||ph.big;var tph=ph.V/Qh*60;
+ var rio=ctx.orig==="rio",fe=ctx.fe,mn=ctx.mn,ph=ctx.ph,tu=ctx.tu;
+ var temFe=fe>0.3,temMn=mn>0.1,ciclo=rio&&tu>10,aera=!rio||temFe||temMn;
+ var etapas=[];
+ /* Correção de pH (e coagulação, na água de rio) */
+ var cp=pick(Qh/6,1.2,{dmin:1.0});big=big||cp.big;var tph=cp.V/Qh*60;
  R.push(["Correção de pH","Tempo de contato",fmt(tph,0)+" min","≥ 10 min","Critério de projeto adotado",tph>=10-1e-6]);
- var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
- R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
- R.push(["Torre de aeração","Número de bandejas","5","≥ 3","Literatura técnica",true]);
- var fl=pick(0,2.5,{amin:Qh*24/180,nmin:2});big=big||fl.big;var tf=Qh*24/fl.A;
- R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ 180 m³/m²·dia","NBR 12216 (filtro rápido)",tf<=180+1e-6]);
+ R.push(["Água bruta","pH",f2(ph),"6,0 a 9,0 na água tratada","Portaria GM/MS nº 888/2021",true]);
+ U.push({label:rio?"Correção de pH e coagulação":"Correção de pH",n:cp.n,d:cp.d,h:cp.hu+.5,hu:cp.hu,v:cp.v,info:(rio?"Dosagem de coagulante e ajuste de pH":"Ajuste do pH")+" com "+fmt(tph,0)+" min de contato. pH da água bruta: "+f2(ph)+"."});
+ etapas.push(rio?"correção de pH e coagulação":"correção de pH");
+ /* Torre de aeração: oxida o ferro e remove gás carbônico (sobe o pH) */
+ if(aera){var ta=Math.max(.9,Math.sqrt(Qh/40)),nt=1;if(ta>2.2){nt=Math.ceil(Qh/40/(2.2*2.2));ta=Math.sqrt(Qh/40/nt);}ta=Math.ceil(ta*10)/10;var tx=Qh/(nt*ta*ta);
+  R.push(["Torre de aeração","Taxa de aplicação nas bandejas",f2(tx)+" m³/m²·h","≤ 40 m³/m²·h","Literatura técnica (aerador de bandejas)",tx<=40+1e-6]);
+  R.push(["Torre de aeração","Número de bandejas","5","≥ 3","Literatura técnica",true]);
+  U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:Math.max(3.2,ta+2.6),sq:true,info:"5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. "+(temFe?"Oxida o ferro ("+f2(fe)+" mg/L) e remove":"Remove")+" gás carbônico e odores."});
+  etapas.push("torre de aeração");}
+ /* Pré-oxidação do manganês: o ar não oxida o manganês, precisa de oxidante (cloro ou permanganato) */
+ if(temMn){var po=pick(Qh/3,1.2,{dmin:1.0});big=big||po.big;var tpo=po.V/Qh*60;
+  R.push(["Pré-oxidação","Tempo de contato com oxidante",fmt(tpo,0)+" min","≥ 20 min","Critério de projeto adotado (manganês)",tpo>=20-1e-6]);
+  U.push({label:"Pré-oxidação (manganês)",n:po.n,d:po.d,h:po.hu+.5,hu:po.hu,v:po.v,info:"Contato com oxidante por "+fmt(tpo,0)+" min para precipitar o manganês ("+f2(mn)+" mg/L) antes dos filtros."});
+  etapas.push("pré-oxidação do manganês");}
+ /* Floculação e decantação: água de rio com turbidez acima de 10 uT */
+ if(ciclo){var fc=pick(Qh*.5,2.5,{dmin:1.0});big=big||fc.big;var tfc=fc.V/Qh*60;
+  R.push(["Floculação","Tempo de floculação",fmt(tfc,0)+" min","20 a 40 min","NBR 12216",tfc>=20-1e-6]);
+  U.push({label:"Floculador",n:fc.n,d:fc.d,h:fc.hu+.5,hu:fc.hu,v:fc.v,info:"Floculação hidráulica com "+fmt(tfc,0)+" min de detenção (NBR 12216)."});
+  var dc=pick(0,3.0,{amin:Qh*24/25,nmin:1});big=big||dc.big;var tdc=Qh*24/dc.A;
+  R.push(["Decantação","Taxa de aplicação superficial",f2(tdc)+" m³/m²·dia","≤ 25 m³/m²·dia","NBR 12216 (ETA de pequeno porte)",tdc<=25+1e-6]);
+  U.push({label:"Decantador",n:dc.n,d:dc.d,h:dc.hu+.5,hu:dc.hu,v:dc.v,info:"Decantação com taxa de "+f2(tdc)+" m³/m²·dia (NBR 12216). Turbidez da água bruta: "+fmt(tu,0)+" uT."});
+  etapas.push("floculação","decantação");}
+ /* Filtros: taxa menor quando há muito ferro ou manganês */
+ var txmax=(fe>5||temMn)?120:180;
+ var fl=pick(0,2.5,{amin:Qh*24/txmax,nmin:2});big=big||fl.big;var tf=Qh*24/fl.A;
+ R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ "+txmax+" m³/m²·dia",txmax<180?"Critério de projeto (ferro/manganês altos)":"NBR 12216 (filtro rápido)",tf<=txmax+1e-6]);
  R.push(["Filtros","Número de filtros",String(fl.n),"≥ 2","NBR 12216",fl.n>=2]);
+ if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
+ if(temMn)R.push(["Água bruta","Manganês",f2(mn)+" mg/L","≤ 0,1 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
+ if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT",ciclo?"acima de 10 uT: ciclo completo":"até 10 uT: filtração direta","NBR 12216",true]);
+ U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
+ etapas.push("filtração");
  var ds=pick(Qh*.5,1.2,{dmin:1.0});big=big||ds.big;var tc=ds.V/Qh*60;
  R.push(["Desinfecção","Tempo de contato com cloro",fmt(tc,0)+" min","≥ 30 min","Portaria GM/MS nº 888/2021",tc>=30-1e-6]);
  var rs=pick(Qp/3,function(d){return d<=2.5?4:5},{dmin:2});big=big||rs.big;
  R.push(["Reservatório","Volume de reservação",f2(rs.V)+" m³","≥ "+f2(Qp/3)+" m³ (1/3 do dia de maior consumo)","NBR 12217",rs.V>=Qp/3-1e-6]);
- U.push({label:"Correção de pH",n:ph.n,d:ph.d,h:ph.hu+.5,hu:ph.hu,v:ph.v,info:"Tanque de dosagem em PRFV com "+fmt(tph,0)+" min de contato."});
- U.push({label:"Torre de aeração",kind:"torre",n:nt,d:ta,h:Math.max(3.2,ta+2.6),sq:true,info:"5 bandejas de "+f2(ta)+" × "+f2(ta)+" m, taxa de "+f2(tx)+" m³/m²·h. Oxida o ferro e remove gases e odores."});
- U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros em PRFV com taxa de "+f2(tf)+" m³/m²·dia (NBR 12216)."});
  U.push({label:"Desinfecção",n:ds.n,d:ds.d,h:ds.hu+.5,hu:ds.hu,v:ds.v,info:"Contato com cloro por "+fmt(tc,0)+" min (Portaria GM/MS nº 888/2021)."});
  U.push({label:"Reservatório de água tratada",n:rs.n,d:rs.d,h:rs.hu+.5,hu:rs.hu,v:rs.v,info:"Reservação de "+f2(rs.V)+" m³, 1/3 do volume do dia de maior consumo (NBR 12217)."});
- return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:"ETA em PRFV: pH + aeração + filtração + desinfecção",txt:"Correção de pH, torre de aeração, filtros e desinfecção, com reservatório de água tratada.",nb:"Normas de referência: ABNT NBR 12216 e Portaria GM/MS nº 888/2021"};}
+ etapas.push("desinfecção");
+ var nome=ciclo?"ETA de ciclo completo em PRFV":rio?"ETA de filtração direta em PRFV":temMn?"ETA para ferro e manganês em PRFV":temFe?"ETA para remoção de ferro em PRFV":"ETA em PRFV";
+ var por=rio?(ciclo?"Água de rio ou igarapé com turbidez de "+fmt(tu,0)+" uT: precisa de floculação e decantação antes dos filtros.":"Água de rio ou igarapé com baixa turbidez: filtração direta, sem decantador."):(temMn?"Água de poço com manganês: o ar não remove o manganês, por isso entra a pré-oxidação antes dos filtros.":temFe?"Água de poço com ferro ("+f2(fe)+" mg/L): a aeração oxida o ferro e os filtros retêm o precipitado.":"Água de poço: aeração para remover gás carbônico e subir o pH, seguida de filtração.");
+ var txt=etapas.join(", ").replace(/, ([^,]*)$/," e $1");txt=txt.charAt(0).toUpperCase()+txt.slice(1)+", com reservatório de água tratada. "+por;
+ return{U:U,R:R,Qp:Qp,Qh:Qh,big:big,sol:nome+": "+etapas.join(" + "),txt:txt,nb:"Normas de referência: ABNT NBR 12216, NBR 12217 e Portaria GM/MS nº 888/2021"};}
 
 /* ---------- interface ---------- */
 var TIPOS={esgoto:[["Residência / condomínio residencial",160,"Pessoas atendidas"],["Escritório / comércio",50,"Pessoas atendidas"],["Escola (externato)",50,"Alunos e funcionários"],["Indústria (por funcionário)",70,"Funcionários"],["Hotel / pousada",120,"Hóspedes e funcionários"],["Hospital (por leito)",250,"Leitos"],["Comunidade rural / ribeirinha",100,"Moradores"]],
@@ -113,11 +144,15 @@ function calc(){
  }else{
   var K1a=num("p_k1a",1.2),Qp=MODE==="pes"?P*q*K1a/1000:toM3d(vin,vu);
   if(Qp<=0){return empty();}
-  res=eta(Qp,{Hop:num("p_hop",24)});
+  var orig=$("s_orig").value,rio=orig==="rio",fe=num("s_fe",NaN),mn=num("s_mn",NaN),phv=num("s_ph",NaN),tu=num("s_tu",NaN);
+  var dfe=rio?0.3:2,dmn=0,dph=rio?6.5:5.5,dtu=rio?40:5;
+  $("s_qh").textContent="Em branco: ferro "+f2(dfe).replace(",00","")+" mg/L, manganês "+dmn+" mg/L, pH "+String(dph).replace(".",",")+" e turbidez "+dtu+" uT, valores típicos de "+(rio?"rio ou igarapé":"poço")+" na região.";
+  fe=isFinite(fe)&&fe>=0?fe:dfe;mn=isFinite(mn)&&mn>=0?mn:dmn;phv=isFinite(phv)&&phv>0?phv:dph;tu=isFinite(tu)&&tu>=0?tu:dtu;
+  res=eta(Qp,{Hop:num("p_hop",24),orig:orig,fe:fe,mn:mn,ph:phv,tu:tu});
   $("r_med_l").textContent=MODE==="pes"?"Consumo médio":"Vazão de projeto";$("r_pk_l").textContent="Produção da ETA";
   $("r_med").textContent=fmt(MODE==="pes"?Qp/K1a:Qp,1)+" m³/dia";$("r_med2").textContent=MODE==="pes"?"Dia de maior consumo: "+fmt(Qp,1)+" m³/dia":f2(Qp/86.4)+" L/s";
   $("r_pk").textContent=f2(res.Qh)+" m³/h";$("r_pk2").textContent=fmt(num("p_hop",24),0)+" h de operação por dia";
-  lines.push("Vazão de projeto "+fmt(Qp,1)+" m³/dia · produção "+f2(res.Qh)+" m³/h");
+  lines.push("Vazão de projeto "+fmt(Qp,1)+" m³/dia · produção "+f2(res.Qh)+" m³/h · água de "+(rio?"rio/igarapé":"poço")+" · ferro "+f2(fe)+" mg/L · manganês "+f2(mn)+" mg/L · pH "+f2(phv)+" · turbidez "+fmt(tu,0)+" uT");
  }
  last=res;
  $("r_sol").textContent=res.sol;$("r_txt").textContent=res.txt;$("r_nb").textContent=res.nb;
@@ -154,7 +189,8 @@ function setL(l){L=l;document.querySelectorAll("#simulador .tabs .tab").forEach(
 document.querySelectorAll("#simulador .tabs .tab").forEach(function(b){b.addEventListener("click",function(){setL(b.dataset.l)})});
 document.querySelectorAll(".seg button").forEach(function(b){b.addEventListener("click",function(){setMode(b.dataset.m)})});
 $("s_tipo").addEventListener("change",setRef);
-["s_pop","s_q","s_cid","s_v","p_t","p_dbo","p_k1","p_k2","p_hop","p_k1a"].forEach(function(i){$(i).addEventListener("input",calc)});
+["s_pop","s_q","s_cid","s_v","p_t","p_dbo","p_k1","p_k2","p_hop","p_k1a","s_fe","s_mn","s_ph","s_tu"].forEach(function(i){$(i).addEventListener("input",calc)});
+$("s_orig").addEventListener("change",calc);
 $("s_vu").addEventListener("change",calc);
 $("simf").addEventListener("submit",function(e){e.preventDefault()});
 /* baixar o desenho */
