@@ -49,6 +49,10 @@ M.prototype.ring=function(x,y,z,R,r,c,id,a0,a1,seg){seg=seg||28;a0=a0||0;a1=a1==
  for(var i=0;i<=seg;i++){var g=a0+(a1-a0)*i/seg,p=[x+R*Math.cos(g),y,z+R*Math.sin(g)];if(prev)this.tube(prev,p,r,c,id,6,false);prev=p;}};
 M.prototype.pipe=function(a,b,c,id){this.tube(a,b,.055,c||C.pipe,id,12);};
 /* tubulação com curvas de 90° e luvas nas emendas, como numa instalação real em PVC */
+M.prototype.jrun=function(pts,c,r){/* tubulação com joelhos de 90° nas mudanças de direção (sem T) */this.run(pts,c,-1,r);
+ for(var i=1;i<pts.length-1;i++){var P=pts[i],A=pts[i-1],B=pts[i+1],d1=[P[0]-A[0],P[1]-A[1],P[2]-A[2]],d2=[B[0]-P[0],B[1]-P[1],B[2]-P[2]],l1=Math.hypot(d1[0],d1[1],d1[2])||1,l2=Math.hypot(d2[0],d2[1],d2[2])||1,k=Math.min(.09,l1*.45,l2*.45);
+  this.tube([P[0]-d1[0]/l1*k,P[1]-d1[1]/l1*k,P[2]-d1[2]/l1*k],[P[0]+d1[0]/l1*r*1.2,P[1]+d1[1]/l1*r*1.2,P[2]+d1[2]/l1*r*1.2],r*1.28,c,-1,12,true);
+  this.tube([P[0]-d2[0]/l2*r*1.2,P[1]-d2[1]/l2*r*1.2,P[2]-d2[2]/l2*r*1.2],[P[0]+d2[0]/l2*k,P[1]+d2[1]/l2*k,P[2]+d2[2]/l2*k],r*1.28,c,-1,12,true);}};
 M.prototype.run=function(pts,c,id,r){r=r||.055;c=c||C.pipe;for(var i=0;i<pts.length-1;i++){var a=pts[i],b=pts[i+1];if(Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2])<.01)continue;this.tube(a,b,r,c,id,12,false);}
  for(i=1;i<pts.length-1;i++){var p=pts[i];this.cyl(p[0],p[1]-r*1.35,p[2],r*1.35,r*2.7,c,id,12);}
  for(i=0;i<pts.length-1;i++){a=pts[i];b=pts[i+1];var L=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);if(L<2.2)continue;var k=Math.floor(L/2);for(var s=1;s<=k;s++){var t=s/(k+1),m=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],dx=(b[0]-a[0])/L,dy=(b[1]-a[1])/L,dz=(b[2]-a[2])/L;
@@ -225,7 +229,7 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
  var W=xmax-xmin,D=zmax-zmin,FW=W+3.2,FD=D+3.4;
  m.box(0,-.05,0,320,.05,320,C.grass,-2);m.box(0,-.02,0,FW,.04,FD,C.gravel,-2);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);
  /* tanques */
- grp.forEach(function(g){var un=g.un,R=un.d/2,first=null;g.cs.forEach(function(row){row.forEach(function(c){var cx=X(c[0]),cz=Zz(c[1]);if(!first)first=[cx,cz];m.stank(cx,cz,R,un.h,col,g.id,un.h>2.6?Math.PI:undefined);});});
+ grp.forEach(function(g){var un=g.un,R=un.d/2,first=null;g.cs.forEach(function(row){row.forEach(function(c){var cx=X(c[0]),cz=Zz(c[1]);if(!first)first=[cx,cz];m.stank(cx,cz,R,un.h,col,g.id,un.h>2.6?Math.PI:undefined);if(un.split){/* parede divisória: FAS de um lado, decantador do outro */m.box(cx,un.h,cz,.08,.06,un.d-.04,C.raw,g.id);m.tube([cx,.05,cz+R+.006],[cx,un.h,cz+R+.006],.025,C.raw,g.id,6,false);m.tube([cx,.05,cz-R-.006],[cx,un.h,cz-R-.006],.025,C.raw,g.id,6,false);}});});
   var mid=X(g.x0+g.w/2);u.push({id:g.id,n:un.label,t:un.info||"",at:[mid,un.h+1.15,Zz(zs)],g:{x:first[0],z:first[1],y0:0,r:R,h:un.h,n:un.n}});});
  /* filtros de biogás: ao lado (+z) de cada reator UASB; com menos filtros que reatores, os primeiros reatores recebem um filtro e os outros ligam no mais próximo */
  if(gG&&gU){var all=[];gU.cs.forEach(function(row){row.forEach(function(c){all.push(c)})});var RU=gU.un.d/2,rg=gG.un.d/2,gpos=[];
@@ -247,13 +251,19 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
   gU.cs.forEach(function(row,k){var zl=Zz(zs+k*P),xl=X(row[row.length-1][0]);m.run([[hx,-.35,zl],[hx,ytop,zl],[xl,ytop,zl]],AF,-1,RA);row.forEach(function(c){m.run([[X(c[0]),ytop,zl],[X(c[0]),ytop,zl-RU2*.45],[X(c[0]),gU.un.h,zl-RU2*.45]],AF,-1,RA*.8);});});}
  /* entre grupos, em cada linha: coletor da saída de todos os tanques e distribuição por igual na entrada dos tanques seguintes (lados alternados) */
  for(var gi=0;gi<grp.length-1;gi++){var a=grp[gi],b=grp[gi+1],s=gi%2?1:-1;
-  for(var k=0;k<L;k++){var ra=a.cs[k],rb=b.cs[k];if(!ra.length||!rb.length)continue;var zl=zs+k*P,Rm=Math.max(a.un.d,b.un.d)/2,zc=Zz(zl+s*(Rm+.4)),y1=a.un.h-.5,y2=b.un.h-.25,xm=X(b.x0-GX/2);
+  for(var k=0;k<L;k++){var ra=a.cs[k],rb=b.cs[k];if(!ra.length||!rb.length)continue;
+   if(ra.length===1&&rb.length===1){/* em linha: sai pela parede voltada para o próximo tanque e entra pela parede de frente, sem T no meio; o rebaixamento é feito com joelho colado no tanque de saída */
+    var ca=ra[0],cb=rb[0],Ra=a.un.d/2,Rb=b.un.d/2,ya=a.un.h-.5,yb2=b.un.h-.25,xa1=ca[0]+Ra-.03,xk=ca[0]+Ra+.22,xb1=cb[0]-Rb+.03,zz=Zz(ca[1]);
+    if(yb2>=ya)m.jrun([[X(xa1),ya,zz],[X(xb1),ya,zz]],ESG,RE);/* mesmo nível ou próximo tanque mais alto: tubo reto, sem conexão */
+    else m.jrun([[X(xa1),ya,zz],[X(xk),ya,zz],[X(xk),yb2,zz],[X(xb1),yb2,zz]],ESG,RE);/* rebaixamento: joelho colado no tanque de saída, desce e outro joelho na altura de entrada */
+    continue;}
+   var zl=zs+k*P,Rm=Math.max(a.un.d,b.un.d)/2,zc=Zz(zl+s*(Rm+.4)),y1=a.un.h-.5,y2=b.un.h-.25,xm=X(b.x0-GX/2);
    if(y2>y1-.05)y2=y1-.1;
    ra.forEach(function(c){m.run([[X(c[0]),y1,Zz(c[1]+s*(a.un.d/2-.03))],[X(c[0]),y1,zc]],ESG,-1,RE*.85);});
    rb.forEach(function(c){m.run([[X(c[0]),y2,zc],[X(c[0]),y2,Zz(c[1]+s*(b.un.d/2-.03))]],ESG,-1,RE*.85);});
    m.run([[X(ra[0][0]),y1,zc],[xm,y1,zc],[xm,y2,zc],[X(rb[rb.length-1][0]),y2,zc]],ESG,-1,RE);}}
  /* saída do efluente tratado em cada linha */
- var gl=grp[grp.length-1];gl.cs.forEach(function(row){if(!row.length)return;var c=row[row.length-1],R=gl.un.d/2;m.run([[X(c[0]+R-.05),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),-.05,Zz(c[1])]],ESG,-1,RE);});
+ var gl=grp[grp.length-1];gl.cs.forEach(function(row){if(!row.length)return;var c=row[row.length-1],R=gl.un.d/2;m.jrun([[X(c[0]+R-.05),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),gl.un.h-.45,Zz(c[1])],[X(c[0]+R+.3),-.05,Zz(c[1])]],ESG,RE);});
  /* casa de máquinas: ar para os FAS e cloro para a desinfecção */
  if(gC){var hx2=X(gC.cx),hz=Zz(gC.cz);if(!m.tpl("casa",hx2,.15,hz,0,gC.un.d/1.65,gC.un.h/2.65,gC.un.d*.8/1.65,col,gC.id))m.house(hx2,hz,gC.un.d,gC.un.h,gC.un.d*.8,gC.id);
   u.push({id:gC.id,n:gC.un.label,t:gC.un.info||"",at:[hx2,gC.un.h+1.0,hz],g:null});
@@ -440,7 +450,7 @@ function GLR(cv){var gl=cv.getContext("webgl2",{antialias:true,alpha:false,premu
    /* adesivo com a logo da SANEAR em cada tanque (dois lados opostos) */
    if(abs(n.y)<.5)for(int k=0;k<24;k++){if(k>=uNT)break;vec4 t=uTk[k];
     if(t.z<0.){/* tanque horizontal: adesivo no meio do costado, nos dois lados */float hr=-t.z;vec2 e=vec2(vP.y-t.w,vP.z-t.y);float de=length(e);
-     if(abs(de-hr)<.06&&abs(vP.x-t.x)<hr){float R=clamp(hr*.42,.3,.6),sd=sign(e.y);vec2 q=vec2((vP.x-t.x)*sd,hr*atan(e.x,abs(e.y)));float l=length(q);
+     if(abs(de-hr)<.06&&abs(vP.x-t.x)<hr){float R=clamp(hr*.42,.3,.6),sd=sign(e.y);vec2 q=vec2(-(vP.x-t.x)*sd,hr*atan(e.x,abs(e.y)));float l=length(q);
       if(l<R){vec2 uv=q/(2.*R)+.5;uv.y=1.-uv.y;vec3 lg=pow(texture(uLogo,uv).rgb,vec3(2.2));float ee=1.-smoothstep(R-.012,R,l);base=mix(base,lg*.92,ee);rough=mix(rough,.22,ee);}break;}
      continue;}
     vec2 d=vP.xz-t.xy;float rr=length(d);

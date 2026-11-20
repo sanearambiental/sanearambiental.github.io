@@ -84,7 +84,10 @@ function ete0(Qmed,ctx,f4){
  /* Filtro aerado submerso (biofiltro aerado submerso) */
  var hF=4.0;/* altura útil padrão SANEAR (altura total 4,50 m) */
  var CVF=1.5;/* carga orgânica volumétrica adotada no volume útil (planilha SANEAR; NBR 12209 permite até 1,8) */
- var fs=pickE(Math.max(qh*1.2,carga1/CVF),hF,{dmin:1.0});big=big||fs.big;
+ /* De 12 m³/dia até 828 pessoas (160 L/pessoa·dia): FAS e decantador secundário num só tanque vertical em PRFV, dividido ao meio por uma parede (metade FAS, metade decantador). Ø até 3,00 m e 5,00 m de altura; o menor Ø que atende aos critérios. */
+ var QV=828*.16*.8,vt=null,hV=4.5,Ah=0;
+ if(Qmed<=QV+1e-6){[1.5,2.0,2.5,3.0].some(function(d){var ah=A(d)/2,V=ah*hV;if(V>=Math.max(qh*1.2,carga1/CVF)-1e-9&&Qmed/ah<=60+1e-9&&Qmax/ah<=120+1e-9){vt=d;Ah=ah;return true;}return false;});}
+ var fs=vt?{n:1,d:vt,hu:hV,v:Ah*hV,A:Ah,V:Ah*hV}:pickE(Math.max(qh*1.2,carga1/CVF),hF,{dmin:1.0});big=big||fs.big;
  var cov=carga1/fs.V,tdhF=fs.V/qh,qar=35*carga1/24;
  R.push(["Filtro aerado (FAS)","Carga orgânica volumétrica (volume útil)",f2(cov)+" kg DBO/m³·dia","≤ 1,50 kg DBO/m³·dia (NBR: até 1,80)","NBR 12209:2011, 6.5.3.4 / planilha SANEAR",cov<=CVF+1e-6]);
  var tos=carga1*1000/(fs.V*.3*500);
@@ -93,7 +96,8 @@ function ete0(Qmed,ctx,f4){
  R.push(["Filtro aerado (FAS)","Vazão de ar do soprador",fmt(qar,1)+" Nm³/h","35 Nm³ de ar por kg de DBO (mínimo 30)","NBR 12209:2011, 6.5.3.5",true]);
  /* Decantador secundário de alta taxa (módulos lamelares/tubulares): taxas usuais de projeto, 60 m³/m²·dia na média e 120 na máxima */
  var hD=2.0;/* planilha SANEAR: volume útil na parte cilíndrica de 2,00 m (altura útil 3,60 m com o fundo cônico; altura total 4,00 m) */
- var dc=pickE(0,hD,{amin:Math.max(Qmed/60,Qmax/120),dmin:1.0});big=big||dc.big;
+ var dc=vt?{n:1,d:vt,hu:hV,v:Ah*hV,A:Ah,V:Ah*hV}:pickE(0,hD,{amin:Math.max(Qmed/60,Qmax/120),dmin:1.0});big=big||dc.big;
+ if(vt)R.push(["Tanque vertical compartimentado","Diâmetro e altura","Ø "+f2(vt)+" × 5,00 m (metade FAS, metade decantador)","Ø ≤ 3,00 m e altura ≤ 5,00 m; até 828 pessoas","Critério de fabricação SANEAR",true]);
  var tm=Qmed/dc.A,tx=Qmax/dc.A,tdhD=dc.V/qh;
  R.push(["Decantador de alta taxa (DS)","Taxa de escoamento superficial (vazão média)",f2(tm)+" m³/m²·dia","≤ 60 m³/m²·dia","Critério de projeto (decantador lamelar)",tm<=60+1e-6]);
  R.push(["Decantador de alta taxa (DS)","Taxa de aplicação superficial (vazão máxima)",f2(tx)+" m³/m²·dia","≤ 120 m³/m²·dia","Critério de projeto (decantador lamelar)",tx<=120+1e-6]);
@@ -113,12 +117,15 @@ function ete0(Qmed,ctx,f4){
  U.push({label:"Estação elevatória",kind:"elev",n:1,d:le,h:.8,info:"Poço em concreto de "+f2(le)+" × "+f2(le)+" m com duas bombas submersíveis (uma reserva), volume útil de "+f2(vel)+" m³ para ciclo de 10 min (NBR 12208). Recalca o esgoto até o reator UASB.",nodim:true});
  U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de "+fmt(eU*100,0)+"% da DBO."});
  U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). "+(ua.d>3?"Um filtro para cada reator UASB. Consumo":"Quantidade para troca do carvão a cada 30 dias: consumo")+" estimado de "+f2(mca)+" kg/dia."});
- U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
- U.push({label:"Decantador de alta taxa (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Decantador secundário com módulos lamelares. Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});
+ if(vt){U.push({label:"Tanque vertical compartimentado: FAS + decantador secundário",split:true,n:1,d:vt,h:5,hu:hV,v:2*Ah*hV,nodim:true,info:"Um só tanque vertical em PRFV, Ø "+f2(vt)+" × 5,00 m, dividido ao meio por uma parede: de um lado o filtro aerado submerso (FAS), com ar do soprador ("+fmt(qar,1)+" Nm³/h) e carga orgânica de "+f2(cov)+" kg DBO/m³·dia; do outro, o decantador secundário com módulos lamelares, com taxa de "+f2(tm)+" m³/m²·dia na vazão média."});
+  U.push({label:"1º compartimento: filtro aerado submerso (FAS)",nodraw:true,n:1,tD:"½ de Ø "+f2(vt),tH:"5,00",v:Ah*hV});
+  U.push({label:"2º compartimento: decantador secundário",nodraw:true,n:1,tD:"½ de Ø "+f2(vt),tH:"5,00",v:Ah*hV});}
+ else{U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
+ U.push({label:"Decantador de alta taxa (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Decantador secundário com módulos lamelares. Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});}
  U.push({label:"Tanque de desinfecção (TD)",n:td.n,d:td.d,h:td.hu+.5,hu:td.hu,v:td.v,info:"Contato com cloro por "+fmt(tc,0)+" min na vazão média (mínimo de 30 min)."});
  U.push({label:"Casa de máquinas",kind:"casa",n:1,d:2.2,h:2.1,info:"Quadro de comando, soprador de ar do FAS e dosagem de cloro.",nodim:true});
  var small=Qmed<=12&&carga0<=3.8;
- return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,big:big,sol:"ETE em PRFV: UASB + FAS + decantador de alta taxa + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
+ return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,big:big,sol:vt?"ETE em PRFV: UASB + tanque vertical compartimentado (FAS + decantador secundário) + desinfecção":"ETE em PRFV: UASB + FAS + decantador de alta taxa + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
 
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
@@ -258,10 +265,10 @@ function calc(){
   lines.push("Área necessária estimada: "+fmt(Math.ceil(tw*tdp),0)+" m² (cerca de "+fmt(Math.max(tw,tdp),1)+" × "+fmt(Math.min(tw,tdp),1)+" m)");}
  else{$("r_area").textContent="–";$("r_area2").textContent="";}
  /* WhatsApp */
- var dimTxt=res.kit?res.U.filter(function(u){return u.kind==="horiz"}).map(function(u){return "• Tanque horizontal compartimentado em PRFV: Ø "+f2(u.d)+" × "+f2(u.len)+" m ("+u.comp.map(function(c){return c[0].toLowerCase()+" "+f2(c[1])+" m"}).join(", ")+")"}).join("\n"):res.U.filter(function(u){return!u.nodim}).map(function(u){return u.nod?"• "+u.label:"• "+u.label+": "+u.n+" × Ø "+f2(u.d)+" m × "+f2(u.h)+" m"}).join("\n");
+ var dimTxt=res.kit?res.U.filter(function(u){return u.kind==="horiz"}).map(function(u){return "• Tanque horizontal compartimentado em PRFV: Ø "+f2(u.d)+" × "+f2(u.len)+" m ("+u.comp.map(function(c){return c[0].toLowerCase()+" "+f2(c[1])+" m"}).join(", ")+")"}).join("\n"):res.U.filter(function(u){return!u.nodim}).map(function(u){return u.nod?"• "+u.label:u.tD?"• "+u.label+": "+u.tD+" m × "+u.tH+" m de altura":"• "+u.label+": "+u.n+" × Ø "+f2(u.d)+" m × "+f2(u.h)+" m"}).join("\n");
  var ld=(window.SANEAR_LEAD&&window.SANEAR_LEAD())||window.__lead||null;var m="Olá, usei o simulador de dimensionamento no site da SANEAR AMBIENTAL."+(ld?"\n• Nome: "+ld.nome+"\n• WhatsApp: "+ld.tel:"")+"\n• Sistema: "+(L==="esgoto"?"ETE (esgoto)":"ETA (água)")+"\n"+(MODE==="pes"?"• Empreendimento: "+t[0]+"\n• "+t[2]+": "+P+"\n• Consumo: "+q+" L/pessoa·dia\n":"")+"• "+lines[0]+"\n• Solução: "+res.sol+($("s_cid").value?"\n• Local: "+$("s_cid").value:"")+(ar?"\n• "+lines[lines.length-1]:"")+"\nTanques (estimativa de tamanhos):\n"+dimTxt+"\nGostaria de um orçamento.";
  $("r_wa").href="https://wa.me/5591989138154?text="+encodeURIComponent(m);last.msg=m;last.sist=(L==="esgoto"?"ETE (esgoto)":"ETA (água)");try{dispatchEvent(new CustomEvent("sanear:sim"))}catch(_){}
- last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.kit?dimTxt.replace("• ",""):res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
+ last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.kit?dimTxt.replace("• ",""):res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.tD?u.label.replace(/ \(.+\)/,"")+" "+u.tD+"×"+u.tH:u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
 }
 var LIM=15000;
 function acima(){empty();$("r_sol").textContent="Acima de 15 mil pessoas";$("r_txt").innerHTML='O simulador atende estações de até 15 mil pessoas. Para estações maiores, entre em contato conosco: <a href="https://wa.me/5591989138154?text='+encodeURIComponent("Olá! Preciso de uma estação para mais de 15 mil pessoas.")+'" target="_blank" rel="noopener">WhatsApp (91) 98913-8154</a>.';}
