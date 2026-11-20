@@ -314,3 +314,36 @@ a.ci2:hover{border-color:#bcd0f3;box-shadow:var(--shadow)}
 .vg img[src*="vistas/"],.vg img[src*="projeto-3d"]{object-fit:contain;background:#fff;border:1px solid var(--line)}
 input,select,textarea{border-radius:10px;padding:12px 14px;transition:border-color .15s,box-shadow .15s}
 input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 4px rgba(11,70,184,.12)}
+/* portfólio */
+.pstats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-h);margin-top:-36px;position:relative;overflow:hidden}
+.pstats div{padding:22px 24px;border-right:1px solid var(--line)}.pstats div:last-child{border-right:0}
+.pstats b{display:block;font-family:Poppins,Inter,sans-serif;font-size:24px;color:var(--brand);line-height:1.2}.pstats span{font-size:14px;color:var(--muted)}
+.cases{display:grid;gap:28px}
+.case{display:grid;grid-template-columns:1.1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
+.case.rev .case-img{order:2}
+.case-img{position:relative;min-height:340px}.case-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.case-img.contain img{object-fit:contain;background:#fff;padding:16px}
+.case-img .tagc{position:absolute;left:16px;top:16px;background:rgba(6,28,74,.85);color:#fff;font:600 13px Poppins,Inter,sans-serif;padding:5px 12px;border-radius:99px}.case-img .tagc.g{background:rgba(47,107,16,.9)}
+.case-tx{padding:36px 40px;display:flex;flex-direction:column;justify-content:center}
+.case-loc{margin:0 0 6px;font:600 13px Poppins,Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.case-tx h3{font-size:24px;margin:0 0 12px;color:var(--accent)}.case-tx p{margin:0 0 16px;color:var(--muted)}.case-tx ul.chk{gap:6px;font-size:15px}
+.filt{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.filt button{font:600 14.5px Poppins,Inter,sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 18px;border-radius:99px;cursor:pointer;transition:.15s}
+.filt button:hover{border-color:#bcd0f3;color:var(--accent)}.filt button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.gi{position:relative;padding:0;border:0;border-radius:14px;overflow:hidden;cursor:zoom-in;background:#dfe7ee;aspect-ratio:4/5;box-shadow:var(--shadow);display:block;text-align:left}
+.gi[hidden]{display:none}
+.gi img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}.gi:hover img{transform:scale(1.05)}
+.gi.p3 img{object-fit:contain;background:#fff;padding:8px}
+.gcap{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 10px;font-size:13px;color:#fff;background:linear-gradient(transparent,rgba(6,20,40,.82))}
+.play{position:absolute;left:50%;top:45%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.play::after{content:"";position:absolute;left:23px;top:18px;border-left:17px solid var(--brand);border-top:11px solid transparent;border-bottom:11px solid transparent}
+.lb{position:fixed;inset:0;z-index:30;background:rgba(4,14,32,.92);display:flex;align-items:center;justify-content:center;gap:12px;padding:20px}
+.lb[hidden]{display:none}
+.lb figure{margin:0;max-width:min(1100px,86vw);text-align:center}
+.lbm img,.lbm video{max-width:100%;max-height:80vh;border-radius:10px;display:block;margin:0 auto;background:#fff}
+.lb figcaption{color:#dbe6fb;margin-top:12px;font-size:15px}
+.lb button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:50%;width:48px;height:48px;font-size:28px;cursor:pointer;flex:none}
+.lb .lbx{position:absolute;right:18px;top:18px}
+@media (max-width:820px){.case,.case.rev{grid-template-columns:1fr}.case.rev .case-img{order:0}.case-img{min-height:240px}.case-tx{padding:24px}.pstats{grid-template-columns:1fr 1fr}.pstats div:nth-child(2){border-right:0}.pstats div:nth-child(-n+2){border-bottom:1px solid var(--line)}.lb .lbp,.lb .lbn{position:absolute;bottom:20px}.lb .lbp{left:30%}.lb .lbn{right:30%}}
+@media (max-width:640px){.gal{grid-template-columns:1fr 1fr;gap:10px}}
