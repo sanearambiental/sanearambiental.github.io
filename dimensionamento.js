@@ -25,6 +25,40 @@ function pickH(V,hb,o){o=o||{};var dmin=o.dmin||1.0,nmin=o.nmin||1;
   var dM=DS[DS.length-1],h=Math.ceil(V/(n*A(dM))*10)/10;if(h<=HMAX)return{n:n,d:dM,hu:Math.max(hb,h),v:A(dM)*Math.max(hb,h),A:n*A(dM),V:n*A(dM)*Math.max(hb,h)};}
  var d=DS[DS.length-1],n=Math.ceil(V/(A(d)*HMAX));return{n:n,d:d,hu:HMAX,v:A(d)*HMAX,A:n*A(d),V:n*A(d)*HMAX,big:true};}
 
+/* ---------- Linha Compacta SANEAR (ABNT NBR 17076:2024, até 12.000 L/dia e 3,80 kg DBO/dia) ----------
+   Tanque séptico + filtro anaeróbio + desinfecção (clorador) → rede de drenagem ou infiltração.
+   Kits padronizados para 160 L/pessoa·dia, limpeza anual e esgoto acima de 25 °C. Ø internos. */
+var KITS=[/* nome, vazão máx (m³/d), pessoas, Ø interno (m), comprimentos dos compartimentos (m): tanque séptico, filtro anaeróbio, desinfecção */
+ ["Kit 1",1.5,9,1.5,2.0,1.5,.5],["Kit 2",3,18,2.0,1.7,1.4,.5],["Kit 3",6,37,2.5,1.7,1.5,.5],
+ ["Kit 4",9,56,2.5,2.1,1.6,.5],["Kit 5",11.2,70,2.5,2.4,2.0,.5]];
+var FOLGA=.30,LMAX=5.0,YB=.35;/* nível da água 0,30 m abaixo do topo; comprimento máximo do tanque horizontal 5,00 m; altura dos berços */
+function aseg(D,h){var r=D/2;return r*r*Math.acos((r-h)/r)-(r-h)*Math.sqrt(2*r*h-h*h);}
+function tTS(L){var t=[[1500,1],[3000,.92],[4500,.83],[6000,.75],[7500,.67],[9000,.58],[12000,.5]];for(var i=0;i<t.length;i++)if(L<=t[i][0])return t[i][1];return .5;}
+function tFA(L,T){var t=[[1500,1.17,1,.92],[3000,1.08,.92,.83],[4500,1,.83,.75],[6000,.92,.75,.67],[7500,.83,.67,.58],[9000,.75,.58,.5],[12000,.75,.5,.5]];for(var i=0;i<t.length;i++)if(L<=t[i][0])return T<15?t[i][1]:T<=25?t[i][2]:t[i][3];return .5;}
+function kTS(T){return T<=10?94:T<=20?65:57;}/* limpeza anual */
+function compacta(Qmed,ctx,carga){
+ var L=Qmed*1000;if(L>12000+1e-6||carga>3.8+1e-9)return null;
+ var N=ctx.N>0?ctx.N:Math.ceil(L/160-1e-9),T=ctx.T,Vts=1000+L*tTS(L)+N*kTS(T)*1,Vfa=Math.max(1000,1.6*L*tFA(L,T));
+ function prof(V){return V<=6000?[1.2,2.2]:V<=10000?[1.5,2.5]:[1.8,2.8];}
+ var k=null,hu=0,As=0;for(var i=0;i<KITS.length;i++){var c=KITS[i],h0=c[3]-FOLGA,a0=aseg(c[3],h0);if(Qmed<=c[1]+1e-9&&a0*c[4]*1000>=Vts-1&&a0*c[5]*1000>=Vfa-1){k=c;hu=h0;As=a0;break;}}
+ if(!k)return null;
+ var vts=As*k[4],vfa=As*k[5],vd=As*k[6],Lt=k[4]+k[5]+k[6],pr=prof(vts*1000),U=[],R=[];
+ var bur=!!ctx.bur;U.push({label:"Tanque compartimentado ("+k[0]+")"+(bur?" – enterrado":" – apoiado"),kind:"horiz",bur:bur,nod:bur,n:1,d:k[3],len:Lt,yb:bur?-(k[3]+.08):YB,h:bur?.1:YB+k[3],nodim:true,comp:[["Tanque séptico",k[4]],["Filtro anaeróbio",k[5]],["Desinfecção",k[6]]],
+  info:"Tanque horizontal em PRFV, Ø "+f2(k[3])+" × "+f2(Lt)+" m, dividido em 3 compartimentos: tanque séptico ("+f2(vts)+" m³), filtro anaeróbio de fluxo ascendente ("+f2(vfa)+" m³) e desinfecção com clorador de pastilhas. "+(bur?"Instalação enterrada: o tanque fica numa vala, sobre laje de concreto, e as bocas de inspeção sobem até o nível do terreno, com tampas.":"Instalação apoiada: o tanque fica sobre berços em PRFV numa base de concreto, com plataforma de inspeção, guarda-corpo e escada.")+" A saída vai para a rede de drenagem ou para a vala de infiltração."});
+ U.push({label:"1º compartimento: tanque séptico",nodraw:true,n:1,tD:"Ø "+f2(k[3])+" × "+f2(k[4])+" m",tH:f2(hu)+" (útil)",v:vts});
+ U.push({label:"2º compartimento: filtro anaeróbio",nodraw:true,n:1,tD:"Ø "+f2(k[3])+" × "+f2(k[5])+" m",tH:f2(hu)+" (útil)",v:vfa});
+ U.push({label:"3º compartimento: desinfecção (clorador)",nodraw:true,n:1,tD:"Ø "+f2(k[3])+" × "+f2(k[6])+" m",tH:f2(hu)+" (útil)",v:vd});
+ R.push(["Enquadramento","Vazão de esgoto",fmt(L,0)+" L/dia","≤ 12.000 L/dia","NBR 17076:2024, 1",true]);
+ R.push(["Enquadramento","Carga orgânica",f2(carga)+" kg DBO/dia","≤ 3,80 kg DBO/dia","NBR 17076:2024, 1",true]);
+ R.push(["Tanque séptico","Volume útil",f2(vts)+" m³","≥ "+f2(Vts/1000)+" m³ (V = 1000 + N·(q·T + K·Lf), N = "+N+", K = "+kTS(T)+")","NBR 17076:2024, A.2",vts*1000>=Vts-1]);
+ R.push(["Tanque séptico","Profundidade útil",f2(hu)+" m",fmt(pr[0],2)+" a "+fmt(pr[1],2)+" m","NBR 17076:2024, Tabela A.3",hu>=pr[0]-1e-6&&hu<=pr[1]+1e-6]);
+ R.push(["Tanque séptico","Diâmetro interno",f2(k[3])+" m","≥ 1,10 m","NBR 17076:2024, A.3",k[3]>=1.1]);
+ R.push(["Filtro anaeróbio","Volume útil",f2(vfa)+" m³","≥ "+f2(Vfa/1000)+" m³ (Vu = 1,6·N·q·T, mín. 1.000 L)","NBR 17076:2024, D.2",vfa*1000>=Vfa-1]);
+ R.push(["Filtro anaeróbio","Altura útil",f2(hu)+" m","≥ 1,20 m","NBR 17076:2024, D.2.3",hu>=1.2-1e-6]);
+ R.push(["Tanque horizontal","Comprimento total",f2(Lt)+" m","≤ "+f2(LMAX)+" m","Critério de fabricação SANEAR",Lt<=LMAX+1e-6]);
+ R.push(["Destino final","Desinfecção antes do lançamento","clorador de pastilhas","lançamento em drenagem ou corpo d'água","CONAMA 430/2011",true]);
+ return{U:U,R:R,Qmed:Qmed,Qmax:Qmed*ctx.K1*ctx.K2,S2:null,kit:k[0],sol:"Linha Compacta SANEAR – "+k[0]+": tanque compartimentado (tanque séptico + filtro anaeróbio + desinfecção)",txt:k[0]+" (até "+fmt(k[1],1)+" m³/dia, cerca de "+k[2]+" pessoas): um tanque horizontal em PRFV de Ø "+f2(k[3])+" × "+f2(Lt)+" m, fabricado na nossa fábrica, "+(ctx.bur?"instalado enterrado":"apoiado sobre base de concreto")+". O efluente tratado vai para a rede de drenagem ou para a vala de infiltração.",nb:"Sistema de menor porte: ABNT NBR 17076:2024"};}
+
 /* ---------- ETE ---------- */
 /* ETE: se a estação passar de 15 tanques no total (UASB, FAS, decantador e desinfecção), refaz com a forma de Ø 4,00 m disponível */
 function ete(Qmed,ctx){var r=ete0(Qmed,ctx,false);if(!r.U)return r;var tot=0;r.U.forEach(function(u){if(u.v)tot+=u.n;});return tot>15?ete0(Qmed,ctx,true):r;}
@@ -36,6 +70,7 @@ function ete0(Qmed,ctx,f4){
  if(ctx.biodig){U.push({label:"Biodigestor SB 1200",n:1,d:1.2,h:1.5,nod:true,info:"Biodigestor em PRFV da SANEAR para famílias de até 5 pessoas."});
   R.push(["Biodigestor","Vazão de esgoto",fmt(Qmed*1000,0)+" L/dia","até 12.000 L/dia","NBR 17076:2024",Qmed<=12]);
   return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,sol:"Biodigestor SB 1200",txt:"Biodigestor em PRFV que atende famílias de até 5 pessoas.",nb:"Sistema de menor porte: ABNT NBR 17076:2024",S2:null};}
+ var kc=compacta(Qmed,ctx,carga0);if(kc)return kc;
  /* Reator UASB — NBR 12209:2011, 6.4 */
  var tdh=T>25?6:T>=22?7:T>=18?8:10,tl=T>25?"esgoto acima de 25 °C":T>=22?"esgoto entre 22 e 25 °C":T>=18?"esgoto entre 18 e 21 °C":"esgoto abaixo de 18 °C";
  var hU=4.5;/* altura útil padrão SANEAR (altura total 5,00 m) */
@@ -184,7 +219,7 @@ function calc(){
   var biodig=MODE==="pes"?(P>0&&P<=5&&t[0].indexOf("Residência")===0):(Qmed>0&&Qmed<=.6);
   if(Qmed<=0){return empty();}
   if(MODE==="pes"?P>LIM:Qmed>LIM*(q>0?q:160)*.8/1000)return acima();
-  res=ete(Qmed,{K1:num("p_k1",1.2),K2:num("p_k2",1.5),T:num("p_t",26),S0:S0,biodig:biodig});
+  res=ete(Qmed,{K1:num("p_k1",1.2),K2:num("p_k2",1.5),T:num("p_t",26),S0:S0,biodig:biodig,bur:$("s_inst").value==="enterrado",N:MODE==="pes"&&/Residência|rural/.test(t[0])?P:0});
   $("r_med_l").textContent="Vazão média";$("r_pk_l").textContent="Vazão máxima";
   $("r_med").textContent=fmt(res.Qmed,1)+" m³/dia";$("r_med2").textContent=f2(res.Qmed/86.4)+" L/s · "+f2(res.Qmed/24)+" m³/h";
   $("r_pk").textContent=fmt(res.Qmax,1)+" m³/dia";$("r_pk2").textContent=f2(res.Qmax/86.4)+" L/s · "+f2(res.Qmax/24)+" m³/h";
@@ -203,30 +238,30 @@ function calc(){
   $("r_pk").textContent=f2(res.Qh)+" m³/h";$("r_pk2").textContent=fmt(num("p_hop",24),0)+" h de operação por dia";
   lines.push("Vazão de projeto "+fmt(Qp,1)+" m³/dia · produção "+f2(res.Qh)+" m³/h · água de "+(rio?"rio/igarapé":"poço")+" · ferro "+f2(fe)+" mg/L · manganês "+f2(mn)+" mg/L · pH "+f2(phv)+" · turbidez "+fmt(tu,0)+" uT");
  }
- last=res;
+ last=res;$("g_inst").hidden=!(L==="esgoto"&&res.kit);
  $("r_sol").textContent=res.sol;$("r_txt").textContent=res.txt;$("r_nb").textContent=res.nb;
  /* tabela de tanques */
- var tb="";res.U.forEach(function(u){if(u.nodim)return;tb+="<tr><td>"+esc(u.label)+"</td><td>"+u.n+"</td><td>"+(u.nod?"–":u.sq?f2(u.d)+" × "+f2(u.d)+" (bandeja)":f2(u.d))+"</td><td>"+(u.nod?"–":f2(u.h))+"</td><td>"+(u.v?f2(u.v)+(u.n>1?" cada":""):"–")+"</td></tr>";});
+ var tb="";res.U.forEach(function(u){if(u.nodim)return;tb+="<tr><td>"+esc(u.label)+"</td><td>"+u.n+"</td><td>"+(u.tD?esc(u.tD):u.nod?"–":u.sq?f2(u.d)+" × "+f2(u.d)+" (bandeja)":f2(u.d))+"</td><td>"+(u.tH?esc(u.tH):u.nod?"–":f2(u.h))+"</td><td>"+(u.v?f2(u.v)+(u.n>1?" cada":""):"–")+"</td></tr>";});
  $("r_tab").innerHTML=tb;
  /* verificação */
  var ok=res.R.every(function(r){return r[5]}),vb="",prev="";
  res.R.forEach(function(r){vb+="<tr"+(r[0]!==prev?' class="g"':"")+"><td>"+(r[0]!==prev?esc(r[0]):"")+"</td><td>"+esc(r[1])+"</td><td><b>"+esc(r[2])+"</b></td><td>"+esc(r[3])+"</td><td class=ref>"+esc(r[4])+"</td><td class="+(r[5]?"ok":"no")+">"+(r[5]?"✓":"✗")+"</td></tr>";prev=r[0];});
  $("r_ver").innerHTML=vb;
- $("r_vnote").textContent="Altura total = altura útil + 0,50 m de borda livre. Diâmetros das formas SANEAR: 1,00; 1,50; 2,00; 2,50 e 3,00 m. "+(L==="esgoto"?"Vazão máxima com K1 = "+fmt(num("p_k1",1.2),2)+" e K2 = "+fmt(num("p_k2",1.5),2)+". Eficiências adotadas: UASB 65% e FAS 80% de remoção de DBO. ":"")+"Critérios marcados como literatura técnica ou critério de projeto complementam a norma onde ela não fixa valor.";
+ $("r_vnote").textContent="Altura total = altura útil + 0,50 m de borda livre. Diâmetros das formas SANEAR: 1,00; 1,50; 2,00; 2,50 e 3,00 m. "+(L==="esgoto"&&res.kit?"Kits da Linha Compacta calculados para 160 L/pessoa·dia, limpeza anual do tanque séptico e esgoto acima de 25 °C. ":"")+(L==="esgoto"&&!res.kit?"Vazão máxima com K1 = "+fmt(num("p_k1",1.2),2)+" e K2 = "+fmt(num("p_k2",1.5),2)+". Eficiências adotadas: UASB 65% e FAS 80% de remoção de DBO. ":"")+"Critérios marcados como literatura técnica ou critério de projeto complementam a norma onde ela não fixa valor.";
  $("r_ok").className="okbox "+(ok?"ok":"no");
  $("r_ok").innerHTML=res.big?"⚠️ Vazão acima da faixa padrão dos nossos tanques: fale com a equipe para um projeto sob medida.":ok?"✓ Todos os "+res.R.length+" critérios verificados atendem às normas":"✗ Algum critério não atende: confira a memória de cálculo";
  /* 3D */
- var ar=null;try{var el=document.querySelector(".simv");var sm=window.SANEAR3D?SANEAR3D.simModel({tipo:L,units:res.U,title:""}):null;if(sm)ar=sm.area;if(el&&el._v3&&sm){el._v3.setModel(sm);}}catch(e){}
+ var ar=null;try{var el=document.querySelector(".simv");var sm=window.SANEAR3D?SANEAR3D.simModel({tipo:L,units:res.U.filter(function(u){return!u.nodraw}),title:""}):null;if(sm)ar=sm.area;if(el&&el._v3&&sm){el._v3.setModel(sm);}}catch(e){}
  /* área necessária: base da estação (arranjo do desenho) e terreno com 1,50 m de circulação em volta */
  if(ar){var bw=Math.ceil(ar.w*2)/2,bd=Math.ceil(ar.d*2)/2,tw=bw+3,tdp=bd+3;
   $("r_area").textContent=fmt(Math.ceil(tw*tdp),0)+" m²";$("r_area2").textContent="Terreno de cerca de "+fmt(Math.max(tw,tdp),1)+" × "+fmt(Math.min(tw,tdp),1)+" m · base da estação "+fmt(Math.ceil(bw*bd),0)+" m²";
   lines.push("Área necessária estimada: "+fmt(Math.ceil(tw*tdp),0)+" m² (cerca de "+fmt(Math.max(tw,tdp),1)+" × "+fmt(Math.min(tw,tdp),1)+" m)");}
  else{$("r_area").textContent="–";$("r_area2").textContent="";}
  /* WhatsApp */
- var dimTxt=res.U.filter(function(u){return!u.nodim}).map(function(u){return u.nod?"• "+u.label:"• "+u.label+": "+u.n+" × Ø "+f2(u.d)+" m × "+f2(u.h)+" m"}).join("\n");
+ var dimTxt=res.kit?res.U.filter(function(u){return u.kind==="horiz"}).map(function(u){return "• Tanque horizontal compartimentado em PRFV: Ø "+f2(u.d)+" × "+f2(u.len)+" m ("+u.comp.map(function(c){return c[0].toLowerCase()+" "+f2(c[1])+" m"}).join(", ")+")"}).join("\n"):res.U.filter(function(u){return!u.nodim}).map(function(u){return u.nod?"• "+u.label:"• "+u.label+": "+u.n+" × Ø "+f2(u.d)+" m × "+f2(u.h)+" m"}).join("\n");
  var ld=(window.SANEAR_LEAD&&window.SANEAR_LEAD())||window.__lead||null;var m="Olá, usei o simulador de dimensionamento no site da SANEAR AMBIENTAL."+(ld?"\n• Nome: "+ld.nome+"\n• WhatsApp: "+ld.tel:"")+"\n• Sistema: "+(L==="esgoto"?"ETE (esgoto)":"ETA (água)")+"\n"+(MODE==="pes"?"• Empreendimento: "+t[0]+"\n• "+t[2]+": "+P+"\n• Consumo: "+q+" L/pessoa·dia\n":"")+"• "+lines[0]+"\n• Solução: "+res.sol+($("s_cid").value?"\n• Local: "+$("s_cid").value:"")+(ar?"\n• "+lines[lines.length-1]:"")+"\nTanques (estimativa de tamanhos):\n"+dimTxt+"\nGostaria de um orçamento.";
  $("r_wa").href="https://wa.me/5591989138154?text="+encodeURIComponent(m);last.msg=m;last.sist=(L==="esgoto"?"ETE (esgoto)":"ETA (água)");try{dispatchEvent(new CustomEvent("sanear:sim"))}catch(_){}
- last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
+ last.lines=lines.slice(0,1).concat(ar?[lines[lines.length-1]]:[]).concat([res.kit?dimTxt.replace("• ",""):res.U.filter(function(u){return!u.nodim&&!u.nod}).map(function(u){return u.label.replace(/ \(.+\)/,"")+" "+u.n+"× Ø"+f2(u.d)+"×"+f2(u.h)}).join("  ·  ")]);
 }
 var LIM=15000;
 function acima(){empty();$("r_sol").textContent="Acima de 15 mil pessoas";$("r_txt").innerHTML='O simulador atende estações de até 15 mil pessoas. Para estações maiores, entre em contato conosco: <a href="https://wa.me/5591989138154?text='+encodeURIComponent("Olá! Preciso de uma estação para mais de 15 mil pessoas.")+'" target="_blank" rel="noopener">WhatsApp (91) 98913-8154</a>.';}
@@ -241,7 +276,7 @@ document.querySelectorAll("#simulador .tabs .tab").forEach(function(b){b.addEven
 document.querySelectorAll(".seg button").forEach(function(b){b.addEventListener("click",function(){setMode(b.dataset.m)})});
 $("s_tipo").addEventListener("change",setRef);
 ["s_pop","s_q","s_cid","s_v","p_t","p_dbo","p_k1","p_k2","p_hop","p_k1a","s_fe","s_mn","s_ph","s_tu"].forEach(function(i){$(i).addEventListener("input",calc)});
-$("s_orig").addEventListener("change",calc);
+$("s_orig").addEventListener("change",calc);$("s_inst").addEventListener("change",calc);
 $("s_vu").addEventListener("change",calc);
 $("simf").addEventListener("submit",function(e){e.preventDefault()});
 /* baixar o desenho */

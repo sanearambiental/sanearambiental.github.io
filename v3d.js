@@ -119,6 +119,36 @@ M.prototype.htank=function(x,z,r,len,c,id){/* tanque horizontal SANEAR: boca de 
  this.cyl(x-len*.28,.25+2*r-.05,z,.38,.32,c,id,18);this.cyl(x-len*.28,.25+2*r+.27,z,.46,.07,c,id,18);
  this.cyl(x+len*.32,.25+2*r-.05,z,.09,.25,C.raw,id,10);
  this.box(x+len*.28,.25+r*.55,z+r-.02,.42,.42,.3,c,id);this.box(x+len*.28,.25+r*.55,z+r+.14,.5,.5,.05,C.raw,id);};
+/* tanque horizontal compartimentado da Linha Compacta SANEAR: berços em PRFV sobre base de concreto, divisórias marcadas, uma boca de inspeção por compartimento */
+M.prototype.hcomp=function(x,z,un,c,id){var r=un.d/2,len=un.len,yb=un.yb,x0=x-len/2,x1=x+len/2,self=this,Y=C.ladder;
+ /* berços em PRFV (selas) sobre a base de concreto; o tanque também pode ser enterrado */
+ var b0=un.bur?yb-.2:0,nb=len>3.2?3:2;for(var i=0;i<nb;i++){var bx=x0+.5+(len-1)*i/(nb-1);this.box(bx,b0,z,.34,.12,un.d*.95,c,id);this.box(bx,b0+.12,z,.2,yb-b0-.12+r*.55,un.d*.8,c,id);}
+ this.hcyl(x,yb,z,r,len,c,id,Math.max(40,Math.round(r*44)));
+ function vring(px,rr,col){var prev=null;for(var k=0;k<=36;k++){var a=k/36*Math.PI*2,p=[px,yb+r+(r+.012)*Math.sin(a),z+(r+.012)*Math.cos(a)];if(prev)self.tube(prev,p,rr,col,id,6,false);prev=p;}}
+ if(un.bur){/* enterrado: chaminés de inspeção em PRFV até o nível do terreno, com tampas */
+  var ac=x0;un.comp.forEach(function(cp,k){var mid=ac+cp[1]/2;if(k)vring(ac,.03,C.raw);var lr=Math.min(.3,cp[1]*.28),y0=yb+2*r-.08;
+   this.cyl(mid,y0,z,lr,-y0+.12,c,id,20);this.cyl(mid,.12,z,lr+.06,.05,C.lid,id,20);this.box(mid,-.02,z,2*lr+.5,.1,2*lr+.5,C.conc,id);
+   if(/Desinf/.test(cp[0]))this.cyl(mid,.17,z,.08,.3,C.cream,id,12);ac+=cp[1];},this);
+  var yi0=yb+2*r-.3,yo0=yb+2*r-.45;this.run([[x0-1.0,yi0,z],[x0+.02,yi0,z]],C.pipe,id,.055);this.run([[x1-.02,yo0,z],[x1+1.0,yo0,z]],C.pipe,id,.055);
+  this.tk.push([x,z,r,(yb+r)/.47]);return;}
+ /* plataforma de inspeção em cima do tanque, com guarda-corpo e escada amarelos */
+ var yd=yb+2*r+.02,W=Math.max(1.1,Math.min(1.5,un.d*.75)),zl=z+W/2;
+ this.box(x,yd,z,len+.1,.05,W,C.metal,id);
+ var acc=x0;un.comp.forEach(function(cp,k){var mid=acc+cp[1]/2;if(k)vring(acc,.03,C.raw);
+  var lr=Math.min(.3,cp[1]*.28);this.cyl(mid,yd-.1,z-W*.12,lr,.28,c,id,20);this.cyl(mid,yd+.18,z-W*.12,lr+.05,.05,C.lid,id,20);/* boca de inspeção de cada compartimento */
+  if(/Desinf/.test(cp[0]))this.cyl(mid,yd+.05,z+W*.25,.08,.4,C.cream,id,12);/* clorador de pastilhas */
+  acc+=cp[1];},this);
+ var yt=yd+1.05,ym=yd+.55,xa=x0-.05,xb=x1+.05,za=z-W/2,zb=z+W/2,lx=x1-.55,gap=.35;
+ function post(px,pz){self.tube([px,yd,pz],[px,yt,pz],.025,Y,id,8);}
+ function rail(a,b){self.tube([a[0],yt,a[1]],[b[0],yt,b[1]],.022,Y,id,8,false);self.tube([a[0],ym,a[1]],[b[0],ym,b[1]],.016,Y,id,6,false);self.tube([a[0],yd+.08,a[1]],[b[0],yd+.08,b[1]],.012,Y,id,6,false);}
+ var np=Math.max(2,Math.ceil(len/1.2));for(var k=0;k<=np;k++){var px=xa+(xb-xa)*k/np;post(px,za);if(Math.abs(px-lx)>gap+.05)post(px,zb);}
+ post(lx-gap,zb);post(lx+gap,zb);post(xa,z);post(xb,z);
+ rail([xa,za],[xb,za]);rail([xa,zb],[lx-gap,zb]);rail([lx+gap,zb],[xb,zb]);rail([xa,za],[xa,zb]);rail([xb,za],[xb,zb]);
+ this.cage(lx,zb+.12,yd,Math.PI/2,Y,id);/* escada marinheiro com gaiola, no lado da plataforma */
+ var yi=yb+2*r-.3,yo=yb+2*r-.45;
+ this.run([[x0-1.0,-.05,z],[x0-1.0,yi,z],[x0+.02,yi,z]],C.pipe,id,.055);/* entrada do esgoto */
+ this.run([[x1-.02,yo,z],[x1+.9,yo,z],[x1+.9,-.05,z]],C.pipe,id,.055);/* saída para drenagem ou vala de infiltração */
+ this.tk.push([x,z,r,(yb+r)/.47]);};
 M.prototype.rtank=function(x,z,w,h,d,c,id){/* tanque retangular SANEAR com aba superior e nervuras */
  this.box(x,0,z,w,h,d,c,id);this.box(x,h-.08,z,w+.24,.08,d+.24,c,id);
  for(var y=h*.3;y<h-.2;y+=h*.3)this.box(x,y,z,w+.08,.07,d+.08,c,id);};
@@ -232,7 +262,7 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
 function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.some(function(un){return/UASB/.test(un.label)}))return eteLines(spec);var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.cream:C.green;
  /* afastamento padrão entre paredes dos tanques, tirado dos projetos SANEAR: 0,40 m nos tanques até Ø 1,50 m e cerca de 1/4 do diâmetro nos maiores (0,70 m no UASB Ø 2,00 m; 0,90 m nos de Ø 3,50 m) */
  function SP(w){return Math.max(.4,Math.round(w*.25*20)/20);}
- var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
+ var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}if(un.kind==="horiz"){rows=1;cols=1;w=un.len;return{un:un,rows:1,cols:1,w:w,g:g,wid:w,depth:un.d};}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
  function BG(a,b){return Math.max(a.g,b.g);}
  var stk=items.filter(function(it){return it.un.on!=null}),items0=items;var psh=items.filter(function(it){return it.un.kind==="parshall"})[0];items=items.filter(function(it){return it.un.on==null&&it.un.kind!=="parshall"});
  var sum=items.reduce(function(s,it){return s+it.wid+it.g},0),lim=items.length>3?Math.max(6,sum/2+.5):1e9;
@@ -246,11 +276,21 @@ function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.
  items.forEach(function(it){it.z-=D/2;});items=items0;stk.forEach(function(it){var t=items[it.un.on];it.x=t.x;it.z=t.z;it.rows=t.rows;it.cols=t.cols;it.g=t.g;it.w=Math.min(it.w,t.w);it.wid=t.wid;});
  /* terreno: grama, área em brita cercada por alambrado e base de concreto sob os tanques */
  var FW=W+3.2,FD=D+3.4;
- m.box(0,-.05,0,320,.05,320,C.grass,-2);m.box(0,-.02,0,FW,.04,FD,C.gravel,-2);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);
- m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);
+ var bur=items.filter(function(it){return it.un.kind==="horiz"&&it.un.bur})[0];
+ if(bur){/* tanque enterrado: vala aberta no terreno (corte), com paredes de terra e laje de fundo */
+  var hx=bur.x+bur.wid/2,hz=bur.z,hw=bur.un.len/2+.45,hd=bur.un.d/2+.45,fy=bur.un.yb-.2;
+  function hole(y,h,Wd,Dd,c){/* só a face de cima, para não marcar emendas no gramado */var L=-Wd/2,R=Wd/2,B=-Dd/2,T=Dd/2,Y=y+h,a=hx-hw,b2=hx+hw,c0=hz-hd,c1=hz+hd;
+   function q(x0,x1,z0,z1){if(x1-x0<1e-3||z1-z0<1e-3)return;m.face([V(x0,Y,z0),V(x0,Y,z1),V(x1,Y,z1),V(x1,Y,z0)],c,-2,true);}
+   q(L,a,B,T);q(b2,R,B,T);q(a,b2,B,c0);q(a,b2,c1,T);}
+  hole(-.05,.05,320,320,C.grass);hole(-.02,.04,FW,FD,C.gravel);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);
+  var E=[150,112,72];m.box(hx,fy-.1,hz,2*hw,.1,2*hd,C.conc,-2);
+  m.box(hx-hw+.04,fy,hz,.08,-fy,2*hd,E,-2);m.box(hx+hw-.04,fy,hz,.08,-fy,2*hd,E,-2);m.box(hx,fy,hz-hd+.04,2*hw,-fy,.08,E,-2);m.box(hx,fy,hz+hd-.04,2*hw,-fy,.08,E,-2);}
+ else{m.box(0,-.05,0,320,.05,320,C.grass,-2);m.box(0,-.02,0,FW,.04,FD,C.gravel,-2);m.box(0,-.02,FD/2+2.2,2.2,.03,4.4,C.gravel,-2);
+ m.box(0,0,0,W+1.4,.15,D+1.4,C.slab,-2);}
  items.forEach(function(it,idx){var un=it.un,id=idx,top=0,B0=un.b||0;it.cs=[];
   for(var k=0;k<un.n;k++){var c=k%it.cols,r=Math.floor(k/it.cols);var cx=it.x+c*(it.w+it.g)+it.w/2,cz=it.z+(r-(it.rows-1)/2)*(it.w+it.g);it.cs.push([cx,cz]);
-   if(un.kind==="torre"){m.tower(cx,cz,un.d,un.h,col,id,un.out,un.sp);}
+   if(un.kind==="horiz"){m.hcomp(cx,cz,un,col,id);top=un.bur?.5:un.yb+un.d;}
+   else if(un.kind==="torre"){m.tower(cx,cz,un.d,un.h,col,id,un.out,un.sp);}
    else if(un.kind==="casa"){if(!m.tpl("casa",cx,.15,cz,0,un.d/1.65,un.h/2.65,un.d*.8/1.65,col,id))m.house(cx,cz,un.d,un.h,un.d*.8,id);}
    else if(un.kind==="gas"){if(!m.tpl("gas",cx,.15,cz,0,un.d/2/.32,un.h/1.05,un.d/2/.32,col,id))m.vtank(cx,cz,un.d/2,un.h,col,id);else m.circ.push([cx,cz,un.d/2]);}
    else if(un.kind==="elev"||un.kind==="prelim"){/* unidade enterrada: só aparecem o colar de concreto e as tampas metálicas no nível do piso */
@@ -263,10 +303,10 @@ function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.
    else if(eta&&/Filtro/.test(un.label)){/* filtro como no projeto: tanque vertical em PRFV branco, escada com gaiola azul no último filtro */
     m.stank(cx,cz,un.d/2,un.h,C.cream,id);if(k===un.n-1){var lt=PECAS&&PECAS.ladder,la=0,rr=un.d/2;if(lt)m.tpl("ladder",cx+(rr-lt.r0),0,cz,la-Math.PI,1,(un.h+1.08)/(lt.h0+1.08),1,C.ladder,id);else m.cage(cx+rr+.06,cz,un.h,la,C.ladder,id);}}
    else{m.stank(cx,cz,un.d/2,un.h,col,id,un.h>2.6?Math.PI/2:undefined);}
-   top=Math.max(top,B0+un.h);}
+   if(un.kind!=="horiz")top=Math.max(top,B0+un.h);}
   it.cx=it.x+it.wid/2;
   var g0=it.cs[0];u.push({id:id,n:un.label,t:un.info||"",at:[it.cx,top+1.15,it.z],g:(un.kind==="casa"||un.kind==="prelim"||un.kind==="elev"||un.nod)?null:{x:g0[0],z:g0[1],y0:B0,r:un.d/2,h:un.h,sq:un.kind==="torre",n:un.n}});});
- var lk=items.filter(function(it){return it.un.kind!=="casa"&&it.un.kind!=="gas"});
+ var lk=items.filter(function(it){return it.un.kind!=="casa"&&it.un.kind!=="gas"&&it.un.kind!=="horiz"});
  /* tubulações no mesmo traçado do projeto Revit da SANEAR */
  var ESG=C.pipe,AF=C.air,RE=.05,RA=.03;
  function rad(it){return it.un.kind==="torre"?it.w*.67:(it.un.kind==="prelim"||it.un.kind==="elev")?0:it.w/2;}
