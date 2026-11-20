@@ -19,8 +19,8 @@ Artigo completo no site: sanearambiental.com 🔗
 📲 (91) 98913-8154
 #ETE #tratamentodeesgoto #condominio #belem #ananindeua #para
 
-## 2026-11-20 (sex) — social/post4-eta-3d.jpg — PENDENTE
+## 2026-11-20 (sex) — social/post4-eta-3d.jpg — PUBLICADO (2026-11-20)
 Projeto 3D de uma ETA para água de poço 💧 A água passa pela torre de aeração, que oxida o ferro, e segue para os filtros de areia ascendentes. Resultado: água limpa, sem cor amarelada e sem cheiro. Tudo fabricado em fibra de vidro (PRFV), sem ferrugem, com 5 anos de garantia.
 📲 Orçamento no WhatsApp: (91) 98913-8154
 🔗 sanearambiental.com
-#ETA #aguadepoco #tratamentodeagua #fibradevidro #belem #ananindeua #marituba #benevides #para
+#ETA #aguadepoco #tratamentodeagua #belem #ananindeua #marituba #benevides #para
