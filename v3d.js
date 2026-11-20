@@ -138,16 +138,18 @@ M.prototype.hcomp=function(x,z,un,c,id){var r=un.d/2,len=un.len,yb=un.yb,x0=x-le
   var lr=Math.min(.3,cp[1]*.28);this.cyl(mid,yd-.1,z-W*.12,lr,.28,c,id,20);this.cyl(mid,yd+.18,z-W*.12,lr+.05,.05,C.lid,id,20);/* boca de inspeção de cada compartimento */
   if(/Desinf/.test(cp[0]))this.cyl(mid,yd+.05,z+W*.25,.08,.4,C.cream,id,12);/* clorador de pastilhas */
   acc+=cp[1];},this);
- var yt=yd+1.05,ym=yd+.55,xa=x0-.05,xb=x1+.05,za=z-W/2,zb=z+W/2,lx=x1-.55,gap=.35;
+ /* escada fora do tanque, junto ao tampo de saída; a plataforma avança até ela */
+ var LD=.55,zs=z-Math.min(W/2-.25,.35),yt=yd+1.05,ym=yd+.55,xa=x0-.05,xb=x1+LD,za=z-W/2,zb=z+W/2,lx=x1+.32,gap=.32;
+ this.box(x1+(LD+.05)/2,yd,z,LD+.05,.05,W,C.metal,id);
  function post(px,pz){self.tube([px,yd,pz],[px,yt,pz],.025,Y,id,8);}
  function rail(a,b){self.tube([a[0],yt,a[1]],[b[0],yt,b[1]],.022,Y,id,8,false);self.tube([a[0],ym,a[1]],[b[0],ym,b[1]],.016,Y,id,6,false);self.tube([a[0],yd+.08,a[1]],[b[0],yd+.08,b[1]],.012,Y,id,6,false);}
- var np=Math.max(2,Math.ceil(len/1.2));for(var k=0;k<=np;k++){var px=xa+(xb-xa)*k/np;post(px,za);if(Math.abs(px-lx)>gap+.05)post(px,zb);}
- post(lx-gap,zb);post(lx+gap,zb);post(xa,z);post(xb,z);
- rail([xa,za],[xb,za]);rail([xa,zb],[lx-gap,zb]);rail([lx+gap,zb],[xb,zb]);rail([xa,za],[xa,zb]);rail([xb,za],[xb,zb]);
- this.cage(lx,zb+.12,yd,Math.PI/2,Y,id);/* escada marinheiro com gaiola, no lado da plataforma */
+ var np=Math.max(2,Math.ceil((xb-xa)/1.2));for(var k=0;k<=np;k++){var px=xa+(xb-xa)*k/np;post(px,za);post(px,zb);}
+ post(xa,z);post(xb,zs-gap);post(xb,zs+gap);
+ rail([xa,za],[xb,za]);rail([xa,zb],[xb,zb]);rail([xa,za],[xa,zb]);rail([xb,za],[xb,zs-gap]);rail([xb,zs+gap],[xb,zb]);
+ this.cage(xb+.14,zs,yd,0,Y,id);/* escada marinheiro com gaiola, por fora do tanque, na altura da plataforma */
  var yi=yb+2*r-.3,yo=yb+2*r-.45;
  this.run([[x0-1.0,-.05,z],[x0-1.0,yi,z],[x0+.02,yi,z]],C.pipe,id,.055);/* entrada do esgoto */
- this.run([[x1-.02,yo,z],[x1+.9,yo,z],[x1+.9,-.05,z]],C.pipe,id,.055);/* saída para drenagem ou vala de infiltração */
+ var zp=z+Math.min(r*.55,.6);this.run([[x1-.02,yo,zp],[x1+1.25,yo,zp],[x1+1.25,-.05,zp]],C.pipe,id,.055);/* saída para drenagem ou vala de infiltração */
  this.tk.push([x,z,r,(yb+r)/.47]);};
 M.prototype.rtank=function(x,z,w,h,d,c,id){/* tanque retangular SANEAR com aba superior e nervuras */
  this.box(x,0,z,w,h,d,c,id);this.box(x,h-.08,z,w+.24,.08,d+.24,c,id);
@@ -262,7 +264,7 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
 function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.some(function(un){return/UASB/.test(un.label)}))return eteLines(spec);var m=new M(),u=[],eta=spec.tipo==="agua",col=eta?C.cream:C.green;
  /* afastamento padrão entre paredes dos tanques, tirado dos projetos SANEAR: 0,40 m nos tanques até Ø 1,50 m e cerca de 1/4 do diâmetro nos maiores (0,70 m no UASB Ø 2,00 m; 0,90 m nos de Ø 3,50 m) */
  function SP(w){return Math.max(.4,Math.round(w*.25*20)/20);}
- var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}if(un.kind==="horiz"){rows=1;cols=1;w=un.len;return{un:un,rows:1,cols:1,w:w,g:g,wid:w,depth:un.d};}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
+ var items=spec.units.map(function(un){var rows=un.n>2?2:1,cols=Math.ceil(un.n/rows),w=un.d,g=SP(w);if(un.kind==="gas"){rows=1;cols=un.n;}if(un.kind==="horiz"){rows=1;cols=1;w=un.len;return{un:un,rows:1,cols:1,w:w,g:g,wid:w+2.2,depth:un.d};}return{un:un,rows:rows,cols:cols,w:w,g:g,wid:cols*w+(cols-1)*g,depth:un.wz||rows*w+(rows-1)*g};});
  function BG(a,b){return Math.max(a.g,b.g);}
  var stk=items.filter(function(it){return it.un.on!=null}),items0=items;var psh=items.filter(function(it){return it.un.kind==="parshall"})[0];items=items.filter(function(it){return it.un.on==null&&it.un.kind!=="parshall"});
  var sum=items.reduce(function(s,it){return s+it.wid+it.g},0),lim=items.length>3?Math.max(6,sum/2+.5):1e9;
