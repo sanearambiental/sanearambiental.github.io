@@ -327,7 +327,7 @@ function simModel(spec){window.__simSpec=spec;if(spec.tipo!=="agua"&&spec.units.
  return{m:m,u:u,title:spec.title||"",span:Math.max(7,Math.max(FW,FD)*1.1+1),yaw:-.55,area:{w:W+1.4,d:D+1.4}};}
 window.SANEAR3D={simModel:simModel};
 fetch("modelos/pecas.json").then(function(r){return r.json()}).then(function(j){PECAS=j;document.querySelectorAll(".simv").forEach(function(el){if(el._v3&&window.__simSpec)el._v3.setModel(simModel(window.__simSpec));});}).catch(function(){});
-var MODELS={ete:eteV,ete2:eteV,eta:eta};var LABEL={ete:"💧 ETE compacta",ete2:"💧 ETE de maior porte",eta:"🚰 ETA"};
+var MODELS={ete:eteV,ete2:eteV,eta:eta};var LABEL={ete:"ETE compacta",ete2:"ETE de maior porte",eta:"ETA"};
 
 /* ===== Renderizador fotorrealista (WebGL2): perspectiva real, céu e névoa, sombras suaves, oclusão ambiente (SSAO), materiais PBR e tone mapping ===== */
 var GLSL_COMMON=`
