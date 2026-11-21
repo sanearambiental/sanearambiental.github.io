@@ -224,6 +224,9 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
  grp.forEach(function(g){g.mx=0;for(var k=0;k<L;k++)g.mx=Math.max(g.mx,share(g.un.n,k));g.sp=SP(g.un.d);g.x0=x;g.w=g.mx*g.un.d+(g.mx-1)*g.sp;x+=g.w+GX;});
  var Wt=x-GX,x0s=-Wt/2,zs=-(L-1)*P/2;grp.forEach(function(g){g.x0+=x0s;g.cs=[];for(var k=0;k<L;k++){var n=share(g.un.n,k),row=[];for(var j=0;j<n;j++)row.push([g.x0+g.un.d/2+j*(g.un.d+g.sp),zs+k*P]);g.cs.push(row);}});
  var zmin=zs-Dmax/2-.6,zmax=zs+(L-1)*P+Dmax/2+.6,xmin=x0s-3.4,xmax=x0s+Wt+.8;
+ /* tratamento preliminar: o comprimento vai no sentido em que couber melhor (ao longo das linhas, se a profundidade da estação comportar; senão para a esquerda) */
+ var pfx=0,pfz=0,lwE=gE?gE.un.d:0;if(gP){var pl=gP.un.pl||gP.un.d*.6,pw0=gP.un.pw||gP.un.d,Dz=zmax-zmin;var Wb=xmax-xmin,aA=(Wb+pl)*Math.max(Dz,pw0+.6),aB=(Wb+pw0)*Math.max(Dz,pl+.6);/* escolhe o sentido que deixa a área total menor */if(aB<=aA){pfx=pw0;pfz=pl;}else{pfx=pl;pfz=pw0;}
+  xmin=Math.min(xmin,x0s-1.3-lwE/2-.4-pfx-.6);if(pfz+.6>Dz){var ez=(pfz+.6-Dz)/2;zmin-=ez;zmax+=ez;}}
  if(gC){gC.cx=x0s+Wt+.9+gC.un.d/2;gC.cz=zs+(L-1)*P/2;xmax=gC.cx+gC.un.d/2+.4;}
  var cx0=(xmin+xmax)/2,cz0=(zmin+zmax)/2;function X(v){return v-cx0}function Zz(v){return v-cz0}
  var W=xmax-xmin,D=zmax-zmin,FW=W+3.2,FD=D+3.4;
@@ -241,7 +244,10 @@ function eteLines(spec){var m=new M(),u=[],col=C.green,ESG=C.pipe,AF=C.air,RE=.0
    m.run([[cx+RU*.35,yt,cz+RU*.3],[cx+RU*.35,yt+.15,cz+RU*.3],[bx,yt+.15,cz+RU*.3],[bx,yt+.15,bz],[bx,gG.un.h+.15,bz]],ESG,-1,.025);});}
  /* tratamento preliminar e elevatória, antes das linhas */
  var xe=x0s-1.3,ze=zs+(L-1)*P/2;
- if(gP){var pw=gP.un.d,pd=pw*.6,px=X(xe-.4-pd/2-(gE?gE.un.d/2:0)),pz=Zz(ze);m.box(px,0,pz,pd+.3,.2,pw+.3,C.conc,gP.id);for(var g=0;g<3;g++){var tw=(pw-.1)/3;m.box(px,.2,pz-pw/2+.05+tw*(g+.5),pd-.1,.025,tw-.04,C.metal,gP.id);}
+ if(gP){var px=X(xe-.4-pfx/2-lwE/2),pz=Zz(ze),alz=pfz>=pfx;m.box(px,0,pz,pfx+.3,.2,pfz+.3,C.conc,gP.id);
+  /* tampas em grelha: três faixas no sentido do fluxo (dois canais de caixa de areia e a parede central), divididas em placas de cerca de 1 m */
+  var Lf=alz?pfz:pfx,Wf=alz?pfx:pfz,np=Math.max(1,Math.round(Lf));for(var g=0;g<3;g++){var tw=(Wf-.1)/3,o=-Wf/2+.05+tw*(g+.5);for(var q=0;q<np;q++){var tl=(Lf-.1)/np,ol=-Lf/2+.05+tl*(q+.5);
+   if(alz)m.box(px+o,.2,pz+ol,tw-.04,.025,tl-.04,C.metal,gP.id);else m.box(px+ol,.2,pz+o,tl-.04,.025,tw-.04,C.metal,gP.id);}}
   u.push({id:gP.id,n:gP.un.label,t:gP.un.info||"",at:[px,1.2,pz],g:null});}
  if(gE){var lw=gE.un.d,ex=X(xe),ez=Zz(ze);m.box(ex,0,ez,lw+.3,.2,lw+.3,C.conc,gE.id);for(var g=0;g<2;g++){var tw=(lw-.1)/2;m.box(ex-lw/2+.05+tw*(g+.5),.2,ez,tw-.04,.025,lw-.1,C.metal,gE.id);}
   u.push({id:gE.id,n:gE.un.label,t:gE.un.info||"",at:[ex,1.2,ez],g:null});

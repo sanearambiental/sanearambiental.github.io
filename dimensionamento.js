@@ -110,7 +110,15 @@ function ete0(Qmed,ctx,f4){
  var mca=Qmed/451.2*1.564,kgf=Math.PI*0.09*0.6*500,nbg=Math.max(1,Math.ceil(mca*30/kgf));if(ua.d>3)nbg=Math.max(nbg,ua.n);/* UASB acima de Ø 3,00 m: um filtro de biogás para cada reator */
  var S2=S1*(1-.85),ef=(1-S2/S0)*100;/* FAS remove 85% (planilha SANEAR) */
  R.push(["Efluente tratado","DBO estimada na saída",fmt(S2,0)+" mg/L ("+fmt(ef,0)+"% de remoção)","≤ 120 mg/L","CONAMA 430/2011, art. 21",S2<=120]);
- U.push({label:"Tratamento preliminar",kind:"prelim",n:1,d:Math.min(3.5,1.6+Qmed/400),h:.8,info:"Grade, caixa de areia e medidor de vazão, em concreto. Retêm sólidos grosseiros e areia (NBR 12209).",nodim:true});
+ /* Tratamento preliminar (NBR 12209): grade + 2 canais de caixa de areia (um em limpeza) + medidor de vazão.
+    Caixa de areia: velocidade de 0,30 m/s (0,25 a 0,40) e taxa de escoamento superficial ≤ 1.300 m³/m²·dia na vazão máxima (adotado 1.000). */
+ var Qxs=Qmax/86400,bC=Math.max(.30,Math.ceil(Qxs/(.3*.6)*20)/20),hC=Qxs/(.3*bC),vC=Qxs/(bC*hC);
+ var LC=Math.max(2.0,Math.ceil(Math.max((Qmax/1000)/bC,22.5*hC)*2)/2),taxa=Qmax/(bC*LC),vG=vC/.67;
+ var pL=Math.round((LC+1.8)*10)/10,pW=Math.round(Math.max(1.2,2*bC+.45)*10)/10;/* comprimento: chegada e grade (1,00 m) + caixa de areia + medidor de vazão (0,80 m); largura: 2 canais e paredes */
+ R.push(["Tratamento preliminar","Velocidade na caixa de areia (vazão máxima)",f2(vC)+" m/s","0,25 a 0,40 m/s","NBR 12209:2011",vC>=.25-1e-6&&vC<=.4+1e-6]);
+ R.push(["Tratamento preliminar","Taxa de escoamento superficial na caixa de areia",fmt(taxa,0)+" m³/m²·dia","600 a 1.300 m³/m²·dia (máx.)","NBR 12209:2011",taxa<=1300+1e-6]);
+ R.push(["Tratamento preliminar","Velocidade entre as barras da grade (vazão máxima)",f2(vG)+" m/s","≤ 1,20 m/s","NBR 12209:2011",vG<=1.2+1e-6]);
+ U.push({label:"Tratamento preliminar",kind:"prelim",n:1,d:pW,pl:pL,pw:pW,h:.8,info:"Grade, dois canais de caixa de areia ("+f2(bC)+" × "+f2(LC)+" m cada, um em operação e um em limpeza) e medidor de vazão, em concreto: área de cerca de "+f2(pL)+" × "+f2(pW)+" m. Velocidade de "+f2(vC)+" m/s e taxa de "+fmt(taxa,0)+" m³/m²·dia na vazão máxima (NBR 12209).",nodim:true});
  /* Estação elevatória: poço com 2 bombas submersíveis (1 reserva), ciclo mínimo de 10 min (NBR 12208) */
  var qb=Qmax/1440,vel=Math.max(.5,qb*10/4),le=Math.max(1.3,Math.ceil(Math.sqrt(vel/1.2)*10)/10);
  R.push(["Estação elevatória","Volume útil do poço (ciclo de 10 min)",f2(vel)+" m³","≥ "+f2(qb*10/4)+" m³","NBR 12208:2020",true]);
