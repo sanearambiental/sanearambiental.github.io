@@ -207,7 +207,7 @@ window.SANEAR_LEAD=lead;set(!lead());
 document.getElementById("gatef").addEventListener("submit",function(e){e.preventDefault();var n=document.getElementById("g_nome").value.trim(),t=document.getElementById("g_tel").value.replace(/\D/g,"");
  if(n.length<2||t.length<10){document.getElementById("g_err").hidden=false;return;}document.getElementById("g_err").hidden=true;
  var l={nome:n,tel:document.getElementById("g_tel").value.trim()};window.__lead=l;try{localStorage.setItem(K,JSON.stringify(l))}catch(_){}set(false);try{document.getElementById("s_v").dispatchEvent(new Event("input"))}catch(_){}});})();</script>
-<script src="dimensionamento.js?v=20261120v"></script>
+<script src="dimensionamento.js?v=20261120w"></script>
 <script src="lead.js?v=20261120v"></script>
 <script src="site.js?v=20261120v"></script>
 </body>
