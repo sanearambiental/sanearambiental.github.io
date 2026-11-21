@@ -108,7 +108,7 @@ function ete0(Qmed,ctx,f4){
  R.push(["Desinfecção (TD)","Tempo de contato com cloro (vazão média)",fmt(tc,0)+" min","≥ 30 min","NBR 12209:2011",tc>=30-1e-6]);
  /* Filtros de biogás: carvão ativado, troca mensal, forma Ø0,60 × 1,00 m (método do memorial SANEAR) */
  var mca=Qmed/451.2*1.564,kgf=Math.PI*0.09*0.6*500,nbg=Math.max(1,Math.ceil(mca*30/kgf));if(ua.d>3)nbg=Math.max(nbg,ua.n);/* UASB acima de Ø 3,00 m: um filtro de biogás para cada reator */
- var S2=S1*(1-.85),ef=(1-S2/S0)*100;/* FAS remove 85% (planilha SANEAR) */
+ var S2=S1*(1-.75),ef=(1-S2/S0)*100;/* FAS remove cerca de 75% da DBO que sai do UASB (UASB + FAS: 20 a 30 mg/L na saída, valor realista) */
  R.push(["Efluente tratado","DBO estimada na saída",fmt(S2,0)+" mg/L ("+fmt(ef,0)+"% de remoção)","≤ 120 mg/L","CONAMA 430/2011, art. 21",S2<=120]);
  /* Tratamento preliminar (NBR 12209): grade + 2 canais de caixa de areia (um em limpeza) + medidor de vazão.
     Caixa de areia: velocidade de 0,30 m/s (0,25 a 0,40) e taxa de escoamento superficial ≤ 1.300 m³/m²·dia na vazão máxima (adotado 1.000). */
@@ -120,20 +120,21 @@ function ete0(Qmed,ctx,f4){
  R.push(["Tratamento preliminar","Velocidade entre as barras da grade (vazão máxima)",f2(vG)+" m/s","≤ 1,20 m/s","NBR 12209:2011",vG<=1.2+1e-6]);
  U.push({label:"Tratamento preliminar",kind:"prelim",n:1,d:pW,pl:pL,pw:pW,h:.8,info:"Grade, dois canais de caixa de areia ("+f2(bC)+" × "+f2(LC)+" m cada, um em operação e um em limpeza) e medidor de vazão, em concreto: área de cerca de "+f2(pL)+" × "+f2(pW)+" m. Velocidade de "+f2(vC)+" m/s e taxa de "+fmt(taxa,0)+" m³/m²·dia na vazão máxima (NBR 12209).",nodim:true});
  /* Estação elevatória: poço com 2 bombas submersíveis (1 reserva), ciclo mínimo de 10 min (NBR 12208) */
- var qb=Qmax/1440,vel=Math.max(.5,qb*10/4),le=Math.max(1.3,Math.ceil(Math.sqrt(vel/1.2)*10)/10);
+ var qb=Qmax/1440,vel=Math.max(qb*10/4,Math.min(.5,Qmed/1440*30)),tdel=vel/(Qmed/1440),le=Math.max(1.3,Math.ceil(Math.sqrt(vel/1.2)*10)/10);
  R.push(["Estação elevatória","Volume útil do poço (ciclo de 10 min)",f2(vel)+" m³","≥ "+f2(qb*10/4)+" m³","NBR 12208:2020",true]);
+ R.push(["Estação elevatória","Tempo de detenção no poço (vazão média)",fmt(tdel,0)+" min","≤ 30 min","NBR 12208:2020",tdel<=30+1e-6]);
  U.push({label:"Estação elevatória",kind:"elev",n:1,d:le,h:.8,info:"Poço em concreto de "+f2(le)+" × "+f2(le)+" m com duas bombas submersíveis (uma reserva), volume útil de "+f2(vel)+" m³ para ciclo de 10 min (NBR 12208). Recalca o esgoto até o reator UASB.",nodim:true});
  U.push({label:"Reator UASB",n:ua.n,d:ua.d,h:ua.hu+.5,hu:ua.hu,v:ua.v,info:"Reator anaeróbio em PRFV. Tempo de detenção de "+f2(tdhU)+" h e velocidade ascensional de "+f2(vm)+" m/h na vazão média (NBR 12209). Remove cerca de "+fmt(eU*100,0)+"% da DBO."});
  U.push({label:"Filtro de biogás",kind:"gas",n:nbg,d:.6,h:1,info:"Forma Ø 0,60 × 1,00 m com carvão ativado (cerca de "+fmt(kgf,0)+" kg por filtro). "+(ua.d>3?"Um filtro para cada reator UASB. Consumo":"Quantidade para troca do carvão a cada 30 dias: consumo")+" estimado de "+f2(mca)+" kg/dia."});
  if(vt){U.push({label:"Tanque vertical compartimentado: FAS + decantador secundário",split:true,n:1,d:vt,h:5,hu:hV,v:2*Ah*hV,nodim:true,info:"Um só tanque vertical em PRFV, Ø "+f2(vt)+" × 5,00 m, dividido ao meio por uma parede: de um lado o filtro aerado submerso (FAS), com ar do soprador ("+fmt(qar,1)+" Nm³/h) e carga orgânica de "+f2(cov)+" kg DBO/m³·dia; do outro, o decantador secundário com módulos lamelares, com taxa de "+f2(tm)+" m³/m²·dia na vazão média."});
   U.push({label:"1º compartimento: filtro aerado submerso (FAS)",nodraw:true,n:1,tD:"½ de Ø "+f2(vt),tH:"5,00",v:Ah*hV});
   U.push({label:"2º compartimento: decantador secundário",nodraw:true,n:1,tD:"½ de Ø "+f2(vt),tH:"5,00",v:Ah*hV});}
- else{U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 85% da DBO que sai do UASB."});
+ else{U.push({label:"Filtro aerado submerso (FAS)",n:fs.n,d:fs.d,h:fs.hu+.5,hu:fs.hu,v:fs.v,info:"Biofiltro aerado em PRFV com ar do soprador ("+fmt(qar,1)+" Nm³/h). Carga orgânica de "+f2(cov)+" kg DBO/m³·dia e tempo de detenção de "+f2(tdhF)+" h. Remove cerca de 75% da DBO que sai do UASB."});
  U.push({label:"Decantador de alta taxa (DS)",n:dc.n,d:dc.d,h:dc.hu+2,hu:dc.hu,v:dc.v,info:"Decantador secundário com módulos lamelares. Taxa de aplicação de "+f2(tm)+" m³/m²·dia na vazão média. O lodo se deposita no fundo e o líquido clarificado segue para a desinfecção."});}
  U.push({label:"Tanque de desinfecção (TD)",n:td.n,d:td.d,h:td.hu+.5,hu:td.hu,v:td.v,info:"Contato com cloro por "+fmt(tc,0)+" min na vazão média (mínimo de 30 min)."});
  U.push({label:"Casa de máquinas",kind:"casa",n:1,d:2.2,h:2.1,info:"Quadro de comando, soprador de ar do FAS e dosagem de cloro.",nodim:true});
  var small=Qmed<=12&&carga0<=3.8;
- return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,big:big,sol:vt?"ETE em PRFV: UASB + tanque vertical compartimentado (FAS + decantador secundário) + desinfecção":"ETE em PRFV: UASB + FAS + decantador de alta taxa + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
+ return{U:U,R:R,Qmed:Qmed,Qmax:Qmax,S2:S2,ef:ef,eU:eU,big:big,sol:vt?"ETE em PRFV: UASB + tanque vertical compartimentado (FAS + decantador secundário) + desinfecção":"ETE em PRFV: UASB + FAS + decantador de alta taxa + desinfecção",txt:"Estação com tanques fabricados na nossa fábrica, quadro de comando e soprador.",nb:small?"Vazão até 12 m³/dia: também se enquadra na ABNT NBR 17076:2024 (menor porte)":"Norma de referência: ABNT NBR 12209:2011"};}
 
 /* ---------- ETA ---------- */
 function eta(Qp,ctx){
@@ -175,21 +176,21 @@ function eta(Qp,ctx){
   etapas.push("pré-oxidação do manganês");}
  /* Floculação e decantação: água de rio com turbidez acima de 10 uT */
  if(ciclo){var fc=pickH(Qh*.5,2.5);big=big||fc.big;var tfc=fc.V/Qh*60;
-  R.push(["Floculação","Tempo de floculação",fmt(tfc,0)+" min","20 a 40 min","NBR 12216",tfc>=20-1e-6]);
+  R.push(["Floculação","Tempo de floculação",fmt(tfc,0)+" min","20 a 30 min (floculador hidráulico)","NBR 12216",tfc>=20-1e-6&&tfc<=30+1e-6]);
   U.push({label:"Floculador",n:fc.n,d:fc.d,h:fc.hu+.5,hu:fc.hu,v:fc.v,info:"Floculação hidráulica com "+fmt(tfc,0)+" min de detenção (NBR 12216)."});
   var dc=pick(0,4.0,{amin:Qh*24/150,nmin:1});big=big||dc.big;var tdc=Qh*24/dc.A;/* decantador de alta taxa (módulos lamelares) */
   R.push(["Decantação","Taxa de aplicação na área do decantador",f2(tdc)+" m³/m²·dia","≤ 150 m³/m²·dia","Critério de projeto adotado (decantador de alta taxa com módulos lamelares, NBR 12216)",tdc<=150+1e-6]);
   U.push({label:"Decantador de alta taxa",n:dc.n,d:dc.d,h:dc.hu+.5,hu:dc.hu,v:dc.v,info:"Decantador com módulos lamelares e taxa de "+f2(tdc)+" m³/m²·dia. Turbidez da água bruta: "+fmt(tu,0)+" uT."});
   etapas.push("floculação","decantação de alta taxa");}
  /* Filtros: taxa menor quando há muito ferro ou manganês */
- var txmax=(fe>5||temMn)?120:180;
+ var txmax=120;/* filtros ascendentes: taxa máxima de 120 m³/m²·dia (NBR 12216) */
  var fl=pick(0,HF-.5,{amin:Qh*24/txmax,nmin:2});/* filtros com 4,00 m de altura total (3,50 m úteis) */big=big||fl.big;var tf=Qh*24/fl.A;
- R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ "+txmax+" m³/m²·dia",txmax<180?"Critério de projeto (ferro/manganês altos)":"NBR 12216 (filtro rápido)",tf<=txmax+1e-6]);
+ R.push(["Filtros","Taxa de filtração",f2(tf)+" m³/m²·dia","≤ "+txmax+" m³/m²·dia","NBR 12216 (filtro ascendente)",tf<=txmax+1e-6]);
  R.push(["Filtros","Número de filtros",String(fl.n),"≥ 2","NBR 12216",fl.n>=2]);
  if(temFe)R.push(["Água bruta","Ferro",f2(fe)+" mg/L","≤ 0,3 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(temMn)R.push(["Água bruta","Manganês",f2(mn)+" mg/L","≤ 0,1 mg/L na água tratada","Portaria GM/MS nº 888/2021",true]);
  if(rio)R.push(["Água bruta","Turbidez",fmt(tu,0)+" uT","≤ 5 uT na água tratada (tratamento convencional)","Portaria GM/MS nº 888/2021",true]);
- U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros ascendentes em PRFV: a água entra pelo fundo de cada filtro (entrada individual a partir do barrilete) e sai pelo alto. Taxa de "+f2(tf)+" m³/m²·dia ("+(txmax<180?"reduzida pela carga de "+(temMn?"manganês":"ferro"):"NBR 12216")+")."});
+ U.push({label:"Filtros",n:fl.n,d:fl.d,h:fl.hu+.5,hu:fl.hu,v:fl.v,info:"Filtros ascendentes em PRFV: a água entra pelo fundo de cada filtro (entrada individual a partir do barrilete) e sai pelo alto. Taxa de "+f2(tf)+" m³/m²·dia (máximo de 120 m³/m²·dia para filtro ascendente, NBR 12216)."});
  etapas.push("filtração");
  R.push(["Desinfecção","Local da cloração","no reservatório de água tratada","tempo de contato ≥ 30 min","Portaria GM/MS nº 888/2021",true]);
  
@@ -210,8 +211,8 @@ function eta(Qp,ctx){
   for(var i=fi-1;i>=0;i--){var u=U[i],nx=U[i+1],top=(nx.b||0)+nx.h,hreq=Math.round((top+.5)*100)/100;/* cada unidade 0,50 m mais alta que a seguinte */
    if(u.kind==="parshall"){u.b=Math.round((top+.3)*100)/100;u.info+=" Fica numa plataforma de concreto a "+f2(u.b)+" m de altura, acima dos tanques: dali a água segue por gravidade.";}
    else{var hu=Math.min(HMAX,hreq-.5);
-    if(/Flocul/.test(u.label)){/* altura fixada pela gravidade (máximo 6,00 m de altura total): escolhe diâmetro e quantidade que mantêm 20 a 40 min */hu=Math.min(hu,5.5);var f=null;for(var nn=1;nn<=MAXN&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=40){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}if(!f){/* vazão muito pequena: até o menor tanque passa de 40 min */var d0=DS[0];f={n:1,d:d0,hu:hu,v:A(d0)*hu,V:A(d0)*hu};}
-     u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>40?" (tanque mínimo)":""),t>=20-1e-6);u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
+    if(/Flocul/.test(u.label)){/* altura fixada pela gravidade (máximo 6,00 m de altura total): escolhe diâmetro e quantidade que mantêm 20 a 30 min */hu=Math.min(hu,5.5);var f=null;for(var nn=1;nn<=MAXN&&!f;nn++)for(var di=0;di<DS.length;di++){var VV=nn*A(DS[di])*hu,tt=VV/Qh*60;if(tt>=20&&tt<=30){f={n:nn,d:DS[di],hu:hu,v:A(DS[di])*hu,V:VV};break;}}if(!f){/* vazão muito pequena: até o menor tanque passa de 30 min */var d0=DS[0];f={n:1,d:d0,hu:hu,v:A(d0)*hu,V:A(d0)*hu};}
+     u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Floculação",fmt(t,0)+" min"+(t>30?" (tanque mínimo)":""),t>=20-1e-6&&(t<=30+1e-6||f.n===1&&f.d===DS[0]));u.info="Floculação hidráulica com "+fmt(t,0)+" min de detenção (NBR 12216).";}
     else if(/Pré-oxid/.test(u.label)){/* no máximo 4,50 m de altura: se precisar ficar mais alto, vai para uma base de concreto */hu=Math.min(hu,4.0);var f=pick(Qh/3,hu,{dmin:1.0});u.n=f.n;u.d=f.d;u.hu=f.hu;u.v=f.v;var t=f.V/Qh*60;setRow("Pré-oxidação",fmt(t,0)+" min",t>=20-1e-6);}
     else{u.hu=hu;u.v=A(u.d)*hu;}
     u.h=Math.round((u.hu+.5)*100)/100;if(u.h<hreq-1e-6){u.b=Math.round((hreq-u.h)*100)/100;u.info+=" Tanque de "+f2(u.h)+" m sobre base de concreto de "+f2(u.b)+" m, para a água seguir por gravidade.";}else u.info+=" Altura de "+f2(u.h)+" m: 0,50 m acima da unidade seguinte, para a água seguir por gravidade.";}}
@@ -262,7 +263,7 @@ function calc(){
  var ok=res.R.every(function(r){return r[5]}),vb="",prev="";
  res.R.forEach(function(r){vb+="<tr"+(r[0]!==prev?' class="g"':"")+"><td>"+(r[0]!==prev?esc(r[0]):"")+"</td><td>"+esc(r[1])+"</td><td><b>"+esc(r[2])+"</b></td><td>"+esc(r[3])+"</td><td class=ref>"+esc(r[4])+"</td><td class="+(r[5]?"ok":"no")+">"+(r[5]?"✓":"✗")+"</td></tr>";prev=r[0];});
  $("r_ver").innerHTML=vb;
- $("r_vnote").textContent="Altura total = altura útil + 0,50 m de borda livre. Diâmetros das formas SANEAR: 1,00; 1,50; 2,00; 2,50 e 3,00 m. "+(L==="esgoto"&&res.kit?"Kits da Linha Compacta calculados para 160 L/pessoa·dia, limpeza anual do tanque séptico e esgoto acima de 25 °C. ":"")+(L==="esgoto"&&!res.kit?"Vazão máxima com K1 = "+fmt(num("p_k1",1.2),2)+" e K2 = "+fmt(num("p_k2",1.5),2)+". Eficiências adotadas: UASB 65% e FAS 80% de remoção de DBO. ":"")+"Critérios marcados como literatura técnica ou critério de projeto complementam a norma onde ela não fixa valor.";
+ $("r_vnote").textContent="Altura total = altura útil + 0,50 m de borda livre. Diâmetros das formas SANEAR: 1,00; 1,50; 2,00; 2,50 e 3,00 m. "+(L==="esgoto"&&res.kit?"Kits da Linha Compacta calculados para 160 L/pessoa·dia, limpeza anual do tanque séptico e esgoto acima de 25 °C. ":"")+(L==="esgoto"&&!res.kit?"Vazão máxima com K1 = "+fmt(num("p_k1",1.2),2)+" e K2 = "+fmt(num("p_k2",1.5),2)+". Eficiências adotadas: UASB "+fmt((res.eU||.7)*100,0)+"% e FAS 75% de remoção de DBO. ":"")+"Critérios marcados como literatura técnica ou critério de projeto complementam a norma onde ela não fixa valor.";
  $("r_ok").className="okbox "+(ok?"ok":"no");
  $("r_ok").innerHTML=res.big?"⚠️ Vazão acima da faixa padrão dos nossos tanques: fale com a equipe para um projeto sob medida.":ok?"✓ Todos os "+res.R.length+" critérios verificados atendem às normas":"✗ Algum critério não atende: confira a memória de cálculo";
  /* 3D */
