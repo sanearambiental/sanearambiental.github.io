@@ -1,8 +1,8 @@
 # Fila de posts do Instagram @ambientalsanear
 Status: PENDENTE ou PUBLICADO (data). A tarefa agendada publica o primeiro PENDENTE cuja data já chegou.
 
-## 2026-11-23 (seg) — social/post1-biodigestor.jpg — PENDENTE
-Ainda usa fossa comum? 🚽➡️🌱 O Biodigestor SB 1200 da SANEAR é feito em fibra de vidro, não enferruja e atende uma família de até 5 pessoas. Instalação rápida e 5 anos de garantia.
+## 2026-11-23 (seg) — social/post1-biodigestor.jpg — PUBLICADO (2026-11-23)
+Ainda usa fossa comum? 🚽➡️🌱 O Biodigestor SB 1200 da SANEAR AMBIENTAL é feito em fibra de vidro, não enferruja e atende uma família de até 5 pessoas. Instalação rápida e 5 anos de garantia.
 📲 Orçamento: (91) 98913-8154
 🔗 sanearambiental.com
 #biodigestor #fossaseptica #saneamento #belem #ananindeua #marituba #para
