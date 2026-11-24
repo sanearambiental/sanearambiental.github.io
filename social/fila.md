@@ -24,3 +24,13 @@ Projeto 3D de uma ETA para água de poço 💧 A água passa pela torre de aera�
 📲 Orçamento no WhatsApp: (91) 98913-8154
 🔗 sanearambiental.com
 #ETA #aguadepoco #tratamentodeagua #belem #ananindeua #marituba #benevides #para
+
+## 2026-11-24 (ter) — social/eta-ananindeua-1.jpg + social/eta-ananindeua-2.jpg (carrossel) — PUBLICADO (2026-11-24)
+🚚💧 ETA entregue na obra em Ananindeua-PA!
+A torre de aeração e o filtro já estão no local, e a montagem da estação começa agora. Tudo é fabricado em fibra de vidro (PRFV) na nossa fábrica em Benevides, com 5 anos de garantia.
+
+Precisa tratar água de poço no seu condomínio ou empresa? Chama a gente:
+📲 WhatsApp (91) 98913-8154
+🌐 sanearambiental.com
+
+#ETA #tratamentodeagua #fibradevidro #ananindeua #belem #benevides #para #saneamento
