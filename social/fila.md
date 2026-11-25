@@ -7,7 +7,7 @@ Ainda usa fossa comum? 🚽➡️🌱 O Biodigestor SB 1200 da SANEAR AMBIENTAL 
 🔗 sanearambiental.com
 #biodigestor #fossaseptica #saneamento #belem #ananindeua #marituba #para
 
-## 2026-11-25 (qua) — social/post2-fabrica.jpg — PENDENTE
+## 2026-11-25 (qua) — social/post2-fabrica.jpg — PUBLICADO (2026-11-25)
 Tudo começa aqui, na nossa fábrica em Benevides-PA 🏭 Fabricamos tanques em PRFV de 1 a 3 metros de diâmetro e levamos até a sua obra em toda a Região Norte. 🚛
 📲 (91) 98913-8154
 🔗 sanearambiental.com
