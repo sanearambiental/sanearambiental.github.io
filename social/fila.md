@@ -13,7 +13,7 @@ Tudo começa aqui, na nossa fábrica em Benevides-PA 🏭 Fabricamos tanques em 
 🔗 sanearambiental.com
 #fibradevidro #prfv #benevides #saneamento #regiaonorte #para
 
-## 2026-11-27 (sex) — social/post3-ete.jpg — PENDENTE
+## 2026-11-30 (seg) — social/post3-ete.jpg — PENDENTE (adiado de 27/11 por causa do Reels)
 Como funciona uma ETE compacta? 💧 O esgoto passa por tratamento preliminar, reator UASB, filtro aerado, decantador e desinfecção, e sai tratado. Tudo em tanques de fibra de vidro, que ocupam pouca área.
 Artigo completo no site: sanearambiental.com 🔗
 📲 (91) 98913-8154
@@ -34,3 +34,13 @@ Precisa tratar água de poço no seu condomínio ou empresa? Chama a gente:
 🌐 sanearambiental.com
 
 #ETA #tratamentodeagua #fibradevidro #ananindeua #belem #benevides #para #saneamento
+
+## 2026-11-27 (sex) 11h — social/reels-acompanhamento-obra.mp4 (REELS, vídeo) — PENDENTE
+Publicar como Reels (vídeo) pelo Windsor.ai create_video_post com video_url https://sanearambiental.com/social/reels-acompanhamento-obra.mp4 — agendado por tarefa única às 11h de 27/11.
+🏗️ Acompanhamento de obra
+16/11 – Equipamentos em PRFV entregues no canteiro ✅
+24/11 – Perfuração das estacas para o radier 🔩
+25/11 – Execução das estacas que vão receber o radier 🔨
+Próximas etapas: radier e instalação da estação! Acompanhe por aqui. 💚
+📲 Orçamento: (91) 98913-8154
+#SanearAmbiental #ETE #Saneamento #PRFV #TratamentoDeEsgoto #Pará
