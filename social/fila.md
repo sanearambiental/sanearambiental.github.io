@@ -35,7 +35,7 @@ Precisa tratar água de poço no seu condomínio ou empresa? Chama a gente:
 
 #ETA #tratamentodeagua #fibradevidro #ananindeua #belem #benevides #para #saneamento
 
-## 2026-11-27 (sex) 11h — social/reels-acompanhamento-obra.mp4 (REELS, vídeo) — PENDENTE
+## 2026-11-27 (sex) 11h — social/reels-acompanhamento-obra.mp4 (REELS, vídeo) — AGUARDANDO ÁUDIO (não publicar; vídeo sem som, usuário vai mandar áudio)
 Publicar como Reels (vídeo) pelo Windsor.ai create_video_post com video_url https://sanearambiental.com/social/reels-acompanhamento-obra.mp4 — agendado por tarefa única às 11h de 27/11.
 🏗️ Acompanhamento de obra
 16/11 – Equipamentos em PRFV entregues no canteiro ✅
